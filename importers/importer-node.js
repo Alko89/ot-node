@@ -3,6 +3,31 @@ let parseString = require('xml2js').parseString;
 const fs = require('fs');
 let md5 = require('md5');
 let xml;
+let db = require('../modules/database');
+
+
+let Database = require('arangojs').Database;
+let aqlQuery = require('arangojs').aqlQuery;
+// let db = new Database();
+// db.useDatabase('ot-node');
+// db.useBasicAuth('root', 'root');
+
+let collection = db.collection('firstCollection');
+
+db.query(aqlQuery`
+  FOR doc IN ${collection}
+  LET value = 100 + doc.value
+  INSERT {
+    _key: CONCAT("new", doc.value),
+    value
+  } INTO ${collection}
+  RETURN NEW
+`).then(
+    cursor => cursor.map(doc => doc._key)
+).then(
+    keys => console.log('Inserted documents:', keys.join(', ')),
+    err => console.error('Failed to insert:', err)
+);
 
 
 //language=HTML format=true
@@ -731,7 +756,7 @@ parseString(xml, {explicitArray: false} , function (err, result) {
     //     console.log('nema')
     // }
 
-    console.log(JSON.stringify(objects, null, 4));
+    // console.log(JSON.stringify(objects, null, 4));
     var json = JSON.stringify(objects, null, 4);
     fs.writeFile('result-2.json', json, 'utf8', function (err) {
         if (err) console.log(err);
