@@ -1,0 +1,53 @@
+{
+    "OBJECT_1": {
+        "identifiers": {
+            "ObjectId": "OBJECT_1",
+            "ean13": "1234567890123",
+            "ean8": "12345678",
+            "qrCode": "5u34bgouenf089dsavbna97ybf84rwens0vub9sudv",
+            "rfid": [
+                "5u34bgouenf089dsavbna97ybf84rwens0vub9sud0",
+                "5u34bgouenf089dsavbna97ybf84rwens0vub9sud1"
+            ],
+            "dataMatrix": "codeValue-dataMatrix",
+            "upcA": "codeValue-upcA",
+            "someOtherCode": "codeValue-someOtherCode",
+            "uid": "ot:WALLET_ID:otoid:OBJECT_1"
+        },
+        "data": {
+            "Name": {
+                "en": "Raw crypto Carrots 50 Kg",
+                "de": "Rohe Krypto Karotten 50 Kg"
+            },
+            "ObjectType": "Vegetable",
+            "ObjectCategory": "Carrot",
+            "ObjectDescription": {
+                "en": "The cryptiest carrots in the entire Cryptonia, packed in 50 Kg package."
+            },
+            "AdditionalInformation": " Lorem Ipsum "
+        },
+        "_key": "a44e00cb14724ed16b0892364f412ebe",
+        "vertex_key": "a44e00cb14724ed16b0892364f412ebe",
+        "vertex_type": "OBJECTS"
+    },
+    "OBJECT_2": {
+        "identifiers": {
+            "ObjectId": "OBJECT_2",
+            "ean13": "1234567890124",
+            "uid": "ot:WALLET_ID:otoid:OBJECT_2"
+        },
+        "data": {
+            "Name": {
+                "EN": "Packed crypto Carrots 1 Kg"
+            },
+            "ObjectType": "Vegetable",
+            "ObjectCategory": "Carrot",
+            "ObjectDescription": {
+                "en": "The cryptiest carrots in the entire Cryptonia, packed for retail in 1 Kg package."
+            }
+        },
+        "_key": "4ec01a2fa903a4c6eb9e76a89582cfdf",
+        "vertex_key": "4ec01a2fa903a4c6eb9e76a89582cfdf",
+        "vertex_type": "OBJECTS"
+    }
+}

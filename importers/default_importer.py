@@ -366,7 +366,9 @@ if 'TransactionData' in OriginTrailExport_element:
             if 'InternalTransactionIdentifiers' not in internal_transaction_element :
                 error('Missing InternalTransactionIdentifiers element for InternalTransaction!')
                 
-            InternalTransactionIdentifiers_element = internal_transaction_element['InternalTransactionIdentifiers']
+            InternalTransac
+
+            tionIdentifiers_element = internal_transaction_element['InternalTransactionIdentifiers']
             
             if 'InternalTransactionId' not in InternalTransactionIdentifiers_element:
                 error('Missing InternalTransactionId for InternalTransaction!')

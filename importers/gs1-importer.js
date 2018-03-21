@@ -1,0 +1,635 @@
+/* eslint-disable no-unused-vars,no-mixed-spaces-and-tabs */
+let parseString = require('xml2js').parseString;
+const fs = require('fs');
+let md5 = require('md5');
+let xml;
+const db = require('../modules/database')();
+const async = require('async');
+var path = require('path');
+
+var gs1_xml;
+gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:n1="http://www.altova.com/samplexml/other-namespace" xmlns:sbdh="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader" schemaVersion="0" creationDate="2001-12-17T09:30:47Z" xsi:schemaLocation="urn:epcglobal:epcis-masterdata:xsd:1 EPCglobal-epcis-masterdata-1_2.xsd">
+	<EPCISHeader>
+		<sbdh:StandardBusinessDocumentHeader>
+			<sbdh:HeaderVersion>1.0</sbdh:HeaderVersion>
+			<sbdh:Sender><!-- Mandatory -->
+				<!--  <sbdh:Identifier Authority="EAN.UCC">2203148000007</sbdh:Identifier> -->
+				<sbdh:Identifier Authority="OriginTrail">SENDER_PROVIDER_ID</sbdh:Identifier> <!-- Mandatory --> <!-- Creator PROVIDER_ID-->
+				<sbdh:ContactInformation> <!-- Mandatory-->
+					<sbdh:Contact>Mary Smith</sbdh:Contact> <!-- Mandatory -->
+					<sbdh:EmailAddress>Mary_Smith@wines.com</sbdh:EmailAddress>	<!-- Optional -->				
+				</sbdh:ContactInformation>
+			</sbdh:Sender>
+			<sbdh:Receiver> <!-- Mandatory -->
+				<sbdh:Identifier Authority="OriginTrail">RECEIVER_PROVIDER_ID</sbdh:Identifier>  <!-- Mandatory-->
+				<sbdh:ContactInformation> <!-- Mandatory-->
+					<sbdh:Contact>John Doe</sbdh:Contact> <!-- Mandatory -->
+					<sbdh:EmailAddress>John_Doe@purchasing.XYZretailer.com</sbdh:EmailAddress> <!-- Optional -->
+				</sbdh:ContactInformation>
+			</sbdh:Receiver>
+			<sbdh:DocumentIdentification> <!-- Mandatory-->
+				<sbdh:Standard>GS1</sbdh:Standard> <!-- WE CAN PUT OUR IMPORTER VERSION -->
+				<sbdh:TypeVersion>V1.3</sbdh:TypeVersion> <!-- Document version-->
+				<sbdh:InstanceIdentifier>100003</sbdh:InstanceIdentifier> <!-- UNIQUE IDENTIFIER OF DOCUMENT - PRIMARY KEY IN ERP -->
+				<sbdh:Type>Ordering</sbdh:Type> <!-- DEFINED IN SCHEMA Example; order, invoice, debitCreditAdvice -->
+				<sbdh:CreationDateAndTime>2003-05-09T00:31:52Z</sbdh:CreationDateAndTime> <!-- Optional -->		
+			</sbdh:DocumentIdentification>
+			<sbdh:BusinessScope> <!-- Optional -->
+				<sbdh:Scope>
+					<sbdh:Type>BusinessProcess</sbdh:Type>
+					<sbdh:InstanceIdentifier>Order-Sell/version2-251</sbdh:InstanceIdentifier>
+					<sbdh:Identifier>EDI-Order-Sell</sbdh:Identifier>
+				</sbdh:Scope>
+			</sbdh:BusinessScope>			
+		</sbdh:StandardBusinessDocumentHeader>
+		<extension>
+			<EPCISMasterData>
+				<VocabularyList>
+					<!-- GS1 standard -->
+					<Vocabulary type="urn:epcglobal:epcis:vtype:BusinessLocation">				
+						<VocabularyElementList>				
+							<VocabularyElement id="urn:epc:id:sgln:6104898.16234.0">				
+								<attribute id="urn:ts:location:partnerId">61048989213</attribute>				
+								<attribute id="urn:ts:location:name">XYZ Retail</attribute>				
+								<attribute id="urn:ts:location:street1">Via Ignatia 768</attribute>				
+								<attribute id="urn:ts:location:city">Bari</attribute>				
+								<attribute id="urn:ts:location:stateOrRegion">Puglia</attribute>				
+								<attribute id="urn:ts:location:postalCode">98852</attribute>
+								<attribute id="urn:ts:location:country">IT</attribute>
+						    </VocabularyElement>		
+						    <VocabularyElement id="urn:epc:id:sgln:8635411.16763.2">				
+								<attribute id="urn:ts:location:partnerId">8635411167632</attribute>				
+								<attribute id="urn:ts:location:name">Mary Salads</attribute>				
+								<attribute id="urn:ts:location:street1">Oak Street 21</attribute>				
+								<attribute id="urn:ts:location:city">Liverpool</attribute>				
+								<attribute id="urn:ts:location:stateOrRegion">England</attribute>				
+								<attribute id="urn:ts:location:postalCode">453674</attribute>
+								<attribute id="urn:ts:location:country">GB</attribute>
+							</VocabularyElement>			
+						</VocabularyElementList>				
+					</Vocabulary>					
+					<!-- OT custom standard -->
+					<Vocabulary type="http://epcis.origintrail.io/masterdata/participant">
+						<VocabularyElementList>
+							<VocabularyElement id="urn:ot:mda:participant:SC34254.F0003">
+								<attribute id="urn:ot:mda:participant:name">XYZ Retail</attribute>								
+								<attribute id="urn:ot:mda:participant:location">urn:epc:id:sgln:6104898.16234.0</attribute>														
+							</VocabularyElement>
+						</VocabularyElementList>
+					</Vocabulary>					
+					<!-- OT custom standard -->
+					<Vocabulary type="http://epcis.origintrail.io/masterdata/object">
+						<VocabularyElementList>
+							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333">								
+								<attribute id="urn:ot:mda:object:name">Winter sallad mix</attribute>
+							    <attribute id="urn:ot:mda:object:type">Sallad</attribute>
+								<attribute id="urn:ot:mda:object:category">Fresh salad</attribute>
+								<attribute id="urn:ot:mda:object:ean13">8438454123998</attribute>																	
+							</VocabularyElement>
+						</VocabularyElementList>
+					</Vocabulary>					
+					<!-- OT custom standard -->
+					<Vocabulary type="http://epcis.origintrail.io/masterdata/batch">
+						<VocabularyElementList>	
+							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00001">
+								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
+							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:01:54Z</attribute>
+								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:01:54Z</attribute>
+							</VocabularyElement>
+							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00002">
+								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
+							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:02:54Z</attribute>
+								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:02:54Z</attribute>
+							</VocabularyElement>						
+							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00003">
+								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
+							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:03:54Z</attribute>
+								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:03:54Z</attribute>
+							</VocabularyElement>																
+						</VocabularyElementList>
+					</Vocabulary>
+				</VocabularyList>
+			</EPCISMasterData>
+		</extension>
+	</EPCISHeader>
+	<EPCISBody>
+		 <EventList>
+			 <ObjectEvent>
+				 <eventTime>2017-07-15T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
+				 <eventTimeZoneOffset>-04:00</eventTimeZoneOffset> <!-- Mandatory-->
+    			 <epcList> <!-- Mandatory-->
+					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00003</epc>
+				 </epcList>				 
+				 <action>OBSERVE</action> <!-- Mandatory-->
+				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
+				 <disposition>urn:epcglobal:cbv:disp:active</disposition> <!-- Optional -->
+				 <readPoint> <!-- Optional -->
+					 <id>urn:epc:id:sgln:8635411.16763.2</id>
+				 </readPoint>
+				 <bizLocation> <!-- Optional -->
+					 <id>urn:epc:id:sgln:8635411.16763.2</id>
+				 </bizLocation>
+				 <extension>
+					 <quantityList> <!-- Optional -->
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00001</epcClass>
+							 <quantity>10</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00002</epcClass>
+							 <quantity>20</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00003</epcClass>
+							 <quantity>30</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+					 </quantityList>
+					 <extension>  <!-- Optional -->
+						 <TemperatureC>15</TemperatureC>  <!-- Optional -->
+						 <RelativeHumidity>80</RelativeHumidity>  <!-- Optional -->
+					 </extension>					 
+				</extension>
+			 </ObjectEvent>
+			 <ObjectEvent>
+				 <eventTime>2017-07-16T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
+				 <eventTimeZoneOffset>-05:12</eventTimeZoneOffset> <!-- Mandatory-->
+    			 <epcList> <!-- Mandatory-->
+					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00003</epc>
+				 </epcList>				 
+				 <action>OBSERVE</action> <!-- Mandatory-->
+				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
+				 <readPoint> <!-- Optional -->
+					 <id>urn:epc:id:sgln:8635411.16763.6</id>
+				 </readPoint>
+				 <extension>
+					 <quantityList> <!-- Optional -->
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00001</epcClass>
+							 <quantity>10</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00002</epcClass>
+							 <quantity>20</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00003</epcClass>
+							 <quantity>30</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+					 </quantityList>
+					 <extension>  <!-- Optional -->
+						 <TemperatureC>22</TemperatureC>  <!-- Optional -->
+						 <RelativeHumidity>17</RelativeHumidity>  <!-- Optional -->
+					 </extension>					 
+				</extension>
+			 </ObjectEvent>
+			 <ObjectEvent>
+				 <eventTime>2017-07-18T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
+				 <eventTimeZoneOffset>-11:12</eventTimeZoneOffset> <!-- Mandatory-->
+    			 <epcList> <!-- Mandatory-->
+					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
+					 <epc>urn:epc:id:sgln:8635411.00333.00003</epc>
+				 </epcList>				 
+				 <action>OBSERVE</action> <!-- Mandatory-->
+				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
+				 <readPoint> <!-- Optional -->
+					 <id>urn:epc:id:sgln:8635411.16763.22</id>
+				 </readPoint>
+				 <extension>
+					 <quantityList> <!-- Optional -->
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00001</epcClass>
+							 <quantity>10</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00002</epcClass>
+							 <quantity>20</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgln:8635411.00333.00003</epcClass>
+							 <quantity>30</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+					 </quantityList>
+					 <extension>  <!-- Optional -->
+						 <TemperatureC>11</TemperatureC>  <!-- Optional -->
+						 <RelativeHumidity>76</RelativeHumidity>  <!-- Optional -->
+					 </extension>					 
+				</extension>
+			 </ObjectEvent>
+		</EventList>
+	 </EPCISBody>
+</epcis:EPCISDocument>`;
+
+
+////find function
+
+function findValuesHelper(obj, key, list) {
+	if (!obj) return list;
+	if (obj instanceof Array) {
+		for (var i in obj) {
+			list = list.concat(findValuesHelper(obj[i], key, []));
+		}
+		return list;
+	}
+	if (obj[key]) list.push(obj[key]);
+
+	if ((typeof obj == 'object') && (obj !== null) ){
+		var children = Object.keys(obj);
+		if (children.length > 0){
+			for (i = 0; i < children.length; i++ ){
+				list = list.concat(findValuesHelper(obj[children[i]], key, []));
+			}
+		}
+	}
+	return list;
+}
+
+//sanitize
+
+function sanitize(old_obj, new_obj, patterns)
+{
+	if(typeof old_obj != 'object')
+		return old_obj;
+
+	for(let key in old_obj) {
+		var new_key = key;
+
+		for(let i in patterns) {
+			new_key = new_key.replace(patterns[i],'');
+		}
+
+		new_obj[new_key] = sanitize(old_obj[key], {}, patterns);
+	}
+
+	return new_obj;
+}
+
+//parsing
+
+
+parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (err, result) {
+
+	//Variables
+	let EPCISDocument_element = [];
+	var sanitized_EPCIS_document;
+	let EPCISHeader_element;
+	let StandardBusinessDocumentHeader_element;
+	let Sender_element;
+	let sender_id_element;
+	let ContactInformation_element;
+	let Receiver_element;
+	let receiver_id_element;
+	let ContactInformation_element_receiver;
+	let DocumentIdentification_element;
+	let BusinessScope_element;
+	let sender_id;
+	let receiver_id;
+
+
+
+	let extension_element;
+	let EPCISMasterData_element;
+	let VocabularyList_element;
+	let Vocabulary_elements;
+	let vocabulary_element;
+	let inside;
+	let type_element;
+	let Bussines_location_elements;
+	let test;
+	let BusinessLocation_element;
+	let sanitized_BusinessLocation_element;
+	let VocabularyElementList_element;
+	let VocabularyElement_element;
+	let business_location_id;
+	let sanitized_VocabularyElement_element;
+	let attribute_id;
+
+	///attributes - BusinessLocation
+	let partner_id;
+	let name;
+	let street1;
+	let city;
+	let stateOrRegion;
+	let postalCode;
+	let country;
+
+
+
+
+
+	let sender = {};
+	let receiver = {};
+	let document_meta = {};
+	let locations = {};
+
+
+	//READING EPCIS Document
+	let doc = findValuesHelper(result, 'epcis:EPCISDocument', []);
+	if (doc.length <= 0) {
+		Error('Missing EPCISDocument element!');
+	} else {
+
+		EPCISDocument_element = result['epcis:EPCISDocument'];
+
+		let new_obj = {};
+		sanitized_EPCIS_document = sanitize(EPCISDocument_element, new_obj, ['sbdh:', 'xmlns:']);
+
+	}
+
+	let head = findValuesHelper(sanitized_EPCIS_document, 'EPCISHeader', []);
+	if (head.length <= 0) {
+		Error('Missing EPCISHeader element for EPCISDocument element!');
+	} else {
+		EPCISHeader_element = sanitized_EPCIS_document.EPCISHeader;
+	}
+
+	let standard_doc_header = findValuesHelper(EPCISHeader_element, 'StandardBusinessDocumentHeader', []);
+	if (standard_doc_header.length <= 0) {
+		Error('Missing StandardBusinessDocumentHeader element for EPCISHeader element!');
+	} else {
+		StandardBusinessDocumentHeader_element = EPCISHeader_element.StandardBusinessDocumentHeader;
+
+	}
+
+
+	////SENDER
+	let send = findValuesHelper(StandardBusinessDocumentHeader_element, 'Sender', []);
+	if (send.length <= 0) {
+		Error('Missing Sender element for StandardBusinessDocumentHeader element!');
+	} else {
+		Sender_element = StandardBusinessDocumentHeader_element.Sender;
+
+	}
+
+	let send_id = findValuesHelper(Sender_element, 'Identifier', []);
+	if (send_id.length <= 0) {
+		Error('Missing Identifier element for Sender element!');
+	} else {
+		sender_id_element = Sender_element.Identifier;
+
+	}
+
+	let sendid = findValuesHelper(sender_id_element, '_', []);
+	if (sendid.length <= 0) {
+		Error('Missing _ element for sender_id element!');
+	} else {
+		sender_id = sender_id_element['_'];
+	}
+
+
+
+
+	let contact_info = findValuesHelper(Sender_element, 'ContactInformation', []);
+	if (contact_info.length <= 0) {
+		Error('Missing ContactInformation element for Sender element!');
+	} else {
+		ContactInformation_element = Sender_element.ContactInformation;
+
+	}
+
+
+
+	/////RECEIVER
+	let receive = findValuesHelper(StandardBusinessDocumentHeader_element, 'Receiver', []);
+	if (receive.length <= 0) {
+		Error('Missing Receiver element for StandardBusinessDocumentHeader element!');
+	} else {
+		Receiver_element = StandardBusinessDocumentHeader_element.Receiver;
+
+	}
+
+
+
+	let receive_id = findValuesHelper(Receiver_element, 'Identifier', []);
+	if (receive_id.length <= 0) {
+		Error('Missing Identifier element for Receiver element!');
+	} else {
+		receiver_id_element = Receiver_element.Identifier;
+
+	}
+
+
+
+	let receiveid = findValuesHelper(receiver_id_element, '_', []);
+	if (receiveid.length <= 0) {
+		Error('Missing Identifier element for Receiver element!');
+	} else {
+		receiver_id = receiver_id_element['_'];
+
+	}
+
+
+
+	let contact_info_rec = findValuesHelper(Receiver_element, 'ContactInformation', []);
+	if (contact_info_rec.length <= 0) {
+		Error('Missing ContactInformation element for Receiver element!');
+	} else {
+		ContactInformation_element_receiver = Receiver_element.ContactInformation;
+
+	}
+
+	let doc_identification = findValuesHelper(StandardBusinessDocumentHeader_element, 'DocumentIdentification', []);
+	if (doc_identification.length <= 0) {
+		Error('Missing DocumentIdentification element for StandardBusinessDocumentHeader element!');
+	} else {
+		DocumentIdentification_element = StandardBusinessDocumentHeader_element.DocumentIdentification;
+
+	}
+
+	let bus_scope = findValuesHelper(StandardBusinessDocumentHeader_element, 'BusinessScope', []);
+	if (bus_scope.length <= 0) {
+		Error('Missing BusinessScope element for StandardBusinessDocumentHeader element!');
+	} else {
+		BusinessScope_element = StandardBusinessDocumentHeader_element.BusinessScope;
+
+	}
+
+
+	sender['sender_id'] = {};
+	sender['sender_id']['identifiers'] = {};
+	sender['sender_id']['identifiers']['sender_id'] = sender_id;
+	sender['sender_id']['data'] = ContactInformation_element;
+	sender['sender_id']['vertex_type'] = 'SENDER';
+
+
+
+	receiver['receiver_id'] = {};
+	receiver['receiver_id']['identifiers'] = {};
+	receiver['receiver_id']['identifiers']['receiver_id'] = receiver_id;
+	receiver['receiver_id']['data'] = ContactInformation_element_receiver;
+	receiver['receiver_id']['vertex_type'] = 'RECEIVER';
+
+	document_meta = Object.assign({}, document_meta, {BusinessScope_element, DocumentIdentification_element});
+
+
+
+
+
+	//READING Master Data
+
+	let ext = findValuesHelper(EPCISHeader_element, 'extension', []);
+	if (ext.length <= 0) {
+		Error('Missing extension element for EPCISHeader element!');
+	} else {
+		extension_element = EPCISHeader_element.extension;
+	}
+
+	let epcis_master = findValuesHelper(extension_element, 'EPCISMasterData', []);
+	if (epcis_master.length <= 0) {
+		Error('Missing EPCISMasterData element for extension element!');
+	} else {
+		EPCISMasterData_element = extension_element.EPCISMasterData;
+	}
+
+	let vocabulary_li = findValuesHelper(EPCISMasterData_element, 'VocabularyList', []);
+	if (vocabulary_li.length <= 0) {
+		Error('Missing VocabularyList element for EPCISMasterData element!');
+	} else {
+		VocabularyList_element = EPCISMasterData_element.VocabularyList;
+	}
+
+	let vocabulary = findValuesHelper(VocabularyList_element, 'Vocabulary', []);
+	if (vocabulary.length <= 0) {
+		Error('Missing Vocabulary element for VocabularyList element!');
+	} else {
+		Vocabulary_elements = VocabularyList_element.Vocabulary;
+	}
+
+	if (!(Vocabulary_elements instanceof Array)) {
+		let temp_vocabulary_elements = Vocabulary_elements;
+		Vocabulary_elements = [];
+		Vocabulary_elements.push(temp_vocabulary_elements);
+	}
+
+    
+
+	for (i in Vocabulary_elements) {
+		vocabulary_element = Vocabulary_elements[i];
+
+		if (!(vocabulary_element instanceof Array)) {
+			let temp_vocabularyel_elements = vocabulary_element;
+			vocabulary_element = [];
+			vocabulary_element.push(temp_vocabularyel_elements);
+		}
+
+		for (i in vocabulary_element){
+			inside = vocabulary_element[i];
+			let pro;
+
+
+			for (i in inside) {
+				pro = inside[i];
+
+				let typ = findValuesHelper(pro, 'type', []);
+				if (typ.length <= 0) {
+					Error('Missing type element for element!');
+				} else {
+					let v_type;
+					v_type = pro.type;
+
+
+					//////////BUSINESS_LOCATION/////////////
+					if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
+						Bussines_location_elements = pro;
+
+						let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
+						if (voc_el_list.length <= 0) {
+							Error('Missing VocabularyElementList element for element!');
+						} else {
+							VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
+						}
+
+						for (let j in Bussines_location_elements)
+						{
+							let one_location;
+							one_location = Bussines_location_elements[j];
+
+							let voc_el_list = findValuesHelper(one_location, 'VocabularyElement', []);
+							if (voc_el_list.length <= 0) {
+								Error('Missing VocabularyElement element for VocabularyList element!');
+							} else {
+								VocabularyElement_element = one_location.VocabularyElement;
+
+							}
+
+							for (let x in VocabularyElement_element) {
+							    let v;
+								v  = VocabularyElement_element[x];
+
+								let loc_id = findValuesHelper(v, 'id', []);
+								if (loc_id.length <= 0) {
+									Error('Missing id element for VocabularyElement element!');
+								} else {
+									let str = v.id;
+
+
+									business_location_id = str.replace('urn:epc:id:sgln:', '');
+
+								}
+
+								let attr = findValuesHelper(v, 'attribute', []);
+								if (attr.length <= 0) {
+									Error('Missing attribute element for VocabularyElement element!');
+								} else {
+                                	let attribute;
+									attribute = v.attribute;
+
+
+
+									for (let y in attribute) {
+										let kk;
+										kk = attribute[y];
+
+
+										let att_id =  findValuesHelper(kk, 'id', []);
+										if (att_id.length <= 0) {
+										    Error('Missing id element for element!');
+										} else {
+                                        	let str = kk.id;
+                                        	attribute_id = str.replace('urn:ts:location:', '');
+										}
+
+										data_object[attribute_id] = kk['_'];
+
+									}
+								}
+
+
+
+								locations[business_location_id] = {};
+								locations[business_location_id]['identifiers'] = {};
+								locations[business_location_id]['identifiers']['bussines_location_id'] = business_location_id;
+								locations[business_location_id]['data'] = data_object;
+								console.log(locations);
+							}
+
+						}
+					}
+				}
+			}
+
+
+
+
+
+
+		}
+
+
+	}
+
+});
+

@@ -3,390 +3,35 @@ let parseString = require('xml2js').parseString;
 const fs = require('fs');
 let md5 = require('md5');
 let xml;
-let db = require('../modules/database');
+const db = require('../modules/database')();
+const async = require('async');
+var path = require('path');
 
-
-let Database = require('arangojs').Database;
-let aqlQuery = require('arangojs').aqlQuery;
+// let Database = require('arangojs').Database;
+// let aqlQuery = require('arangojs').aqlQuery;
 // let db = new Database();
 // db.useDatabase('ot-node');
 // db.useBasicAuth('root', 'root');
-
-let collection = db.collection('firstCollection');
-
-db.query(aqlQuery`
-  FOR doc IN ${collection}
-  LET value = 100 + doc.value
-  INSERT {
-    _key: CONCAT("new", doc.value),
-    value
-  } INTO ${collection}
-  RETURN NEW
-`).then(
-    cursor => cursor.map(doc => doc._key)
-).then(
-    keys => console.log('Inserted documents:', keys.join(', ')),
-    err => console.error('Failed to insert:', err)
-);
+//
+// let collection = db.collection('firstCollection');
 
 
-//language=HTML format=true
-xml = `<OriginTrailExport version="1.4">
-    <DataProvider> <!-- Unique ID for supply chain entity that provides the file -->
-        <ParticipantId>WALLET_ID</ParticipantId>
-    </DataProvider>
-    <MasterData>
-        <!-- 
-        Master data is the core data that is essential to operations in a specific business or business unit. It represents the business objects which are agreed on and shared across the enterprise. It can cover relatively static reference data, unstructured, analytical, hierarchical and metadata. In our current XML structure, the Master Data entities are:
 
-            - ParticipantsList and Participant – Description of all entities (participants) in the supply chain
-            - BusinessLocationsList and BusinessLocation - describe all physical or system locations where business processes are executed
-            - ObjectsList and Object – entities that are subjects of business processes (items or goods being described) 
-        -->
-        <ParticipantsList>	<!-- Description of all entities (participants) in supply chain -->
-            <Participant>
-                <ParticipantIdentifiers> <!-- Required -->
-                    <ParticipantId>PROVIDER_ID</ParticipantId> <!-- Required - During the test phase, you can obtain your Unique ID here https://origintrail.io/node-registration -->
-                    <AnotherIdentifier>SomeValue</AnotherIdentifier> <!-- Optional: you may define and add more identifiers if needed -->
-                </ParticipantIdentifiers>
-                <ParticipantData>
-                    <!--  ParticipantData tag is required, but all the contents inside are optional -->
-                    <Name> <!-- Required -->
-                        <en>Green Warehouse Ltd</en>
-                        <de>Gruene Warehouse Ltd</de>
-                        <!-- languages are defined by ISO 639-1 (https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)-->
-                    </Name>
-                    <Location> <!-- Optional -->
-                        <Address>Data Boulevard 01</Address>
-                        <City>Traceshire</City>
-                        <Country>Cryptonia</Country>
-                        <Zip>10000</Zip>
-                        <GeoLocation>
-                            <Latitude>00.0000</Latitude>
-                            <Longitude>00.0000</Longitude>
-                        </GeoLocation>
-                    </Location>
-                    <AdditionalInformation> Lorem Ipsum </AdditionalInformation> <!-- Optional: you may add additional tags if needed -->
-                </ParticipantData>
-            </Participant>
-            <Participant>
-                <ParticipantIdentifiers>
-                    <ParticipantId>PARTNER_ID</ParticipantId>
-                </ParticipantIdentifiers>
-                <ParticipantData>
-                    <Name>
-                        <EN>Partner</EN>
-                    </Name>
-                    <Location>
-                        <Address>Farmer's Street 01B</Address>
-                        <City>Bytesfield</City>
-                        <Country>Cryptonia</Country>
-                        <Zip>20000</Zip>
-                        <GeoLocation>
-                            <Latitude>00.0000</Latitude>
-                            <Longitude>00.0000</Longitude>
-                        </GeoLocation>
-                    </Location>
-                </ParticipantData>
-            </Participant>
-        </ParticipantsList>
-        <BusinessLocationsList> <!-- This tag describes all physical locations where business processes are executed -->
-            <BusinessLocation>
-                <BusinessLocationOwnerId>PROVIDER_ID</BusinessLocationOwnerId> <!-- Required. Corresponds to ParticipantId in ParticipantsList above -->
-                <BusinessLocationIdentifiers> <!-- Required -->
-                    <BusinessLocationId>WAREHOUSE_1</BusinessLocationId> <!-- Required -->
-                    <AnotherIdentifier>SomeValue</AnotherIdentifier> <!-- Optional: you may define and add more identifiers if needed -->
-                </BusinessLocationIdentifiers>
-                <BusinessLocationData> <!-- Required -->
-                    <Name> <!-- Required -->
-                        <en>Provider's Warehouse</en>
-                        <de>Das Warehouse des Anbieters</de>
-                        <!-- languages are defined by ISO 639-1 (https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)-->
-                    </Name>
-                    <BusinessLocationType>Warehouse</BusinessLocationType> <!-- Required -->
-                    <Location> <!-- Optional -->
-                        <Address>Data Boulevard 02</Address>
-                        <City>Traceshire</City>
-                        <Country>Cryptonia</Country>
-                        <Zip>10000</Zip>
-                        <GeoLocation>
-                            <Latitude>00.0000</Latitude>
-                            <Longitude>00.0000</Longitude>
-                        </GeoLocation>
-                    </Location>
-                    <AdditionalInformation> Lorem Ipsum </AdditionalInformation> <!-- Optional: you may add additional tags if needed -->
-                </BusinessLocationData>
-            </BusinessLocation>
-            <BusinessLocation>
-                <BusinessLocationOwnerId>PARTNER_ID</BusinessLocationOwnerId>
-                <BusinessLocationIdentifiers>
-                    <BusinessLocationId>FARM_1</BusinessLocationId>
-                </BusinessLocationIdentifiers>
-                <BusinessLocationData>
-                    <BusinessLocationName>
-                        <EN>Partner's Farm</EN>
-                    </BusinessLocationName>
-                    <BusinessLocationType>Farm</BusinessLocationType>
-                    <Location>
-                        <Address>Farmer's Street 01B</Address>
-                        <City>Bytesfield</City>
-                        <Country>Cryptonia</Country>
-                        <Zip>20000</Zip>
-                        <GeoLocation>
-                            <Latitude>00.0000</Latitude>
-                            <Longitude>00.0000</Longitude>
-                        </GeoLocation>
-                    </Location>
-                </BusinessLocationData>
-            </BusinessLocation>
-        </BusinessLocationsList>
-        <ObjectsList> <!-- Object descriptions - i.e. product (object) master data, involved in the supply chain -->
-            <Object>
-                <ObjectIdentifiers> <!-- Required: these identifiers usually correspond to the codes available on the packaging of the object. All codes are supported -->
-                    <ObjectId>OBJECT_1</ObjectId> <!-- Required: this should be the preferred product code in the supply chain. At least one code is required and this should be in ObjectId. Example here is ean13 -->
-                    <ean13>1234567890123</ean13> <!-- Optional, but very useful: Repeat the above code also in it's human readable tag -->
-                    <ean8>12345678</ean8> <!-- Optional: add more codes if useful -->
-                    <qrCode>5u34bgouenf089dsavbna97ybf84rwens0vub9sudv</qrCode> <!-- Optional -->
-                    <rfid>5u34bgouenf089dsavbna97ybf84rwens0vub9sud0</rfid> <!-- Optional -->
-                    <rfid>5u34bgouenf089dsavbna97ybf84rwens0vub9sud1</rfid> <!-- Optional, can handle more than one of the same code -->
-                    <dataMatrix>codeValue-dataMatrix</dataMatrix> <!-- Optional -->
-                    <upcA>codeValue-upcA</upcA> <!-- Optional -->
-                    <someOtherCode>codeValue-someOtherCode</someOtherCode> <!-- Optional -->
-                </ObjectIdentifiers>
-                <ObjectData> <!-- Required: contains information about the object, other than the Identifiers -->
-                    <Name> <!-- Required -->
-                        <en>Raw crypto Carrots 50 Kg</en>
-                        <de>Rohe Krypto Karotten 50 Kg</de> <!-- languages are defined by ISO 639-1 (https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)-->
-                    </Name>
-                    <ObjectType>Vegetable</ObjectType>
-                    <ObjectCategory>Carrot</ObjectCategory>
-                    <ObjectDescription> <!-- Optional -->
-                        <en>The cryptiest carrots in the entire Cryptonia, packed in 50 Kg package.</en>
-                    </ObjectDescription>
-                    <AdditionalInformation> Lorem Ipsum </AdditionalInformation> <!-- Optional: you may add additional tags if needed -->
-                </ObjectData>
-            </Object>
-            <Object>
-                <ObjectIdentifiers>
-                    <ObjectId>OBJECT_2</ObjectId>
-                    <ean13>1234567890124</ean13>
-                </ObjectIdentifiers>
-                <ObjectData>
-                    <Name>
-                        <EN>Packed crypto Carrots 1 Kg</EN>
-                    </Name>
-                    <ObjectType>Vegetable</ObjectType>
-                    <ObjectCategory>Carrot</ObjectCategory>
-                    <ObjectDescription>
-                        <en>The cryptiest carrots in the entire Cryptonia, packed for retail in 1 Kg package.</en>
-                    </ObjectDescription>
-                </ObjectData>
-            </Object>
-        </ObjectsList>
-    </MasterData>
-    <TransactionData>
-        <InternalTransactionsList>
-            <InternalTransaction>
-                <InternalTransactionIdentifiers> <!-- Required -->
-                    <InternalTransactionId>TRANSACTION_1</InternalTransactionId> <!-- Required -->
-                    <InternalTransactionDocumentId>TRANSACTION_DOCUMENT_1</InternalTransactionDocumentId> <!-- Optional -->
-                    <!-- <AdditionalInformation> Lorem Ipsum </AdditionalInformation> Optional -->
-                </InternalTransactionIdentifiers>
-                <BatchesInformation> <!-- Required -->
-                    <InputBatchesList> <!-- Optional -->
-                        <Batch>
-                            <BatchIdentifiers> <!-- Required -->
-                                <BatchId>INPUT_UNIT_1</BatchId> <!-- Required -->
-                                <ObjectId>OBJECT_1</ObjectId> <!-- Required -->
-                                <ExpirationDate>2020-01-01</ExpirationDate> <!-- Optional -->
-                                <Lot>012</Lot> <!-- Optional -->
-                                <!-- <abc>Lorem Ipsum</abc> Optional -->
-                            </BatchIdentifiers>
-                            <BatchData> <!-- Required, 1:N is requirement -->
-                                <QuantitiesDataList>
-                                    <QuantityData>
-                                        <Quantity>50.0</Quantity>
-                                        <Measure>Kg</Measure>
-                                    </QuantityData>
-                                    <QuantityData>
-                                        <Quantity>1</Quantity>
-                                        <Measure>Batch</Measure>
-                                    </QuantityData>
-                                </QuantitiesDataList>
-                            </BatchData>
-                        </Batch>
-                    </InputBatchesList>
-                    <OutputBatchesList> <!-- Required -->
-                        <Batch>
-                            <BatchIdentifiers>
-                                <BatchId>OUTPUT_UNIT_1</BatchId>
-                                <ObjectId>OBJECT_2</ObjectId>
-                                <Lot>123L</Lot>
-                                <ExpirationDate>2020-01-01</ExpirationDate>
-                            </BatchIdentifiers>
-                            <BatchData>
-                                <QuantitiesDataList>
-                                    <QuantityData>
-                                        <Quantity>50.0</Quantity>
-                                        <Measure>Kg</Measure>
-                                    </QuantityData>
-                                    <QuantityData>
-                                        <Quantity>50</Quantity>
-                                        <Measure>Batch</Measure>
-                                    </QuantityData>
-                                </QuantitiesDataList>
-                            </BatchData>
-                        </Batch>
-                    </OutputBatchesList>
-                </BatchesInformation>
-                <InternalTransactionData> <!-- Required -->
-                    <TransactionTime>21.01.2018T00:00:00</TransactionTime>
-                    <BusinessProcess>Packaging</BusinessProcess>
-                    <BusinessLocationId>WAREHOUSE_1</BusinessLocationId> <!-- Required -->
-                    <BusinessProcessDescription>Packaging carrots for retail</BusinessProcessDescription>
-                    <AdditionalInformation> <!-- Optional -->
-                        <Note>Machine 1 jammed for 5 minutes</Note>
-                    </AdditionalInformation>
-                </InternalTransactionData>
-            </InternalTransaction>
-        </InternalTransactionsList>
-        <ExternalTransactionsList>
-            <ExternalTransaction>
-                <ExternalTransactionIdentifiers>
-                    <ExternalTransactionId>TRANSACTION_2</ExternalTransactionId>
-                    <ExternalTransactionDocumentId>TRANSACTION_DOCUMENT_2</ExternalTransactionDocumentId>
-                </ExternalTransactionIdentifiers>
-                <BatchesInformation>
-                    <BatchesList>
-                        <Batch>
-                            <BatchIdentifiers>
-                                <BatchId>INPUT_UNIT_1</BatchId>
-                                <ObjectId>OBJECT_1</ObjectId>
-                                <Lot>123</Lot>
-                                <ExpirationDate>2020-01-01</ExpirationDate>
-                            </BatchIdentifiers>
-                            <BatchData>
-                                <QuantitiesDataList>
-                                    <QuantityData>
-                                        <Quantity>50.0</Quantity>
-                                        <Measure>Kg</Measure>
-                                    </QuantityData>
-                                    <QuantityData>
-                                        <Quantity>1</Quantity>
-                                        <Measure>Batch</Measure>
-                                    </QuantityData>
-                                </QuantitiesDataList>
-                            </BatchData>
-                        </Batch>
-                    </BatchesList>
-                </BatchesInformation>
-                <ExternalTransactionData>
-                    <TransactionTime>21.12.2012T00:00:00</TransactionTime>
-                    <BusinessProcess>Purchase</BusinessProcess>
-                    <BusinessLocationId>WAREHOUSE_1</BusinessLocationId>
-                    <TransactionFlow>Input</TransactionFlow> <!-- Required -->
-                    <SourceBusinessLocationId>FARM_1</SourceBusinessLocationId>
-                    <DestinationBusinessLocationId>WAREHOUSE_1</DestinationBusinessLocationId>
-                    <BusinessProcessDescription>Regular Purchase</BusinessProcessDescription>
-                    <AdditionalInformation> <!-- Optional -->
-                        <Price>
-                            <Value>100</Value>
-                            <VAT>1%</VAT>
-                            <Total>101</Total>
-                            <Currency>USD</Currency>
-                            <Discount>0%</Discount>
-                        </Price>
-                        <PaymentType>Bill</PaymentType>
-                    </AdditionalInformation>
-                </ExternalTransactionData>
-            </ExternalTransaction>
-        </ExternalTransactionsList>
-    </TransactionData>
 
-    <VisibilityEventData>
-        <!-- Visibility event data covers details about physical or digital activity in the supply chain of an object batch (explained by the master and transaction data above). It references information collected by either sensors or other external entities (i.e. lab test results) which provide more details about a specific object batch in a specific point in time or time span.  -->
-        <VisibilityEventsList>
-            <Event>
-                <EventIdentifiers> <!-- Required -->
-                    <EventId>EVENT_1</EventId> <!-- Required -->
-                    <BatchId>OUTPUT_UNIT_1</BatchId> <!-- Required -->
-                    <ObjectId>OBJECT_2</ObjectId> <!-- Required -->
-                </EventIdentifiers>
-                <EventData> <!-- Required -->
-                    <TemperatureData>
-                        <MeasurementStartTimestamp>2018-01-01T00:00:00</MeasurementStartTimestamp>
-                        <MeasurementEndTimestamp>2018-01-02T00:00:00</MeasurementEndTimestamp>
-                        <AverageTemperature>27</AverageTemperature>
-                        <MinimumTemperature>18</MinimumTemperature>
-                        <MaximumTemperature>31</MaximumTemperature>
-                        <Measure>C</Measure> <!-- Measurment unit -->
-                        <MeasurementSequence>
-                            <!-- Optional: MeasurementSequence contains sample level measurement data in the form of timestamp/value pairs -->
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T00:00:00</MeasurementTimestamp>
-                                <MeasurementValue>24</MeasurementValue>
-                                <Measure>C</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T00:00:01</MeasurementTimestamp>
-                                <MeasurementValue>27</MeasurementValue>
-                                <Measure>C</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T00:00:02</MeasurementTimestamp>
-                                <MeasurementValue>25</MeasurementValue>
-                                <Measure>C</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T00:00:03</MeasurementTimestamp>
-                                <MeasurementValue>26</MeasurementValue>
-                                <Measure>C</Measure>
-                            </Measurement>
-                        </MeasurementSequence>
-                        <AdditionalInformation> <!-- Optional -->
-                            <DeviceId>TMP123</DeviceId>
-                        </AdditionalInformation>
-                    </TemperatureData>
-                    <HumidityData>
-                        <MeasurementStartTimestamp>2018-01-01T00:00:00</MeasurementStartTimestamp>
-                        <MeasurementEndTimestamp>2018-01-02T00:00:00</MeasurementEndTimestamp>
-                        <AverageHumidity>50</AverageHumidity>
-                        <MinimumHumidity>35</MinimumHumidity>
-                        <MaximumHumidity>75</MaximumHumidity>
-                        <Measure>%</Measure>
-                        <MeasurementSequence>
-                            <!-- Optional: MeasurementSequence contains sample level measurement data in the form of timestamp/value pairs -->
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T01:00:00</MeasurementTimestamp>
-                                <MeasurementValue>55</MeasurementValue>
-                                <Measure>%</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T03:00:00</MeasurementTimestamp>
-                                <MeasurementValue>27</MeasurementValue>
-                                <Measure>%</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T05:00:00</MeasurementTimestamp>
-                                <MeasurementValue>67</MeasurementValue>
-                                <Measure>%</Measure>
-                            </Measurement>
-                            <Measurement>
-                                <MeasurementTimestamp>2018-01-01T07:00:00</MeasurementTimestamp>
-                                <MeasurementValue>75</MeasurementValue>
-                                <Measure>%</Measure>
-                            </Measurement>
-                        </MeasurementSequence>
-                        <AdditionalInformation> <!-- Optional -->
-                            <DeviceId>HUM123</DeviceId>
-                        </AdditionalInformation>
-                    </HumidityData>
-                </EventData>
-            </Event>
-        </VisibilityEventsList>
-    </VisibilityEventData>
-</OriginTrailExport>`
 
+//import XML from NODE argument
+if (process.argv.length < 3) {
+    console.log('Usage: node ' + process.argv[1] + ' FILENAME');
+    process.exit(1);
+}
+
+let file = process.argv[2];
+
+let file_data = fs.readFileSync(__dirname + '/' + file, 'utf8');
+
+
+
+////find function
 function findValuesHelper(obj, key, list) {
     if (!obj) return list;
     if (obj instanceof Array) {
@@ -408,20 +53,24 @@ function findValuesHelper(obj, key, list) {
     return list;
 }
 
+////PARSING
 
-parseString(xml, {explicitArray: false} , function (err, result) {
+parseString(file_data, {explicitArray: false} , async function (err, result) {
 
-    let participants = {};
+    let participants = [];
     let locations = {};
     let objects = {};
-    let baches = {};
+    let batches = {};
     let transactions = {};
     let events = {};
+    let transfered_batches = {};
 
 
     let owned_by = [];
     let at = [];
     let input_batch = [];
+    let input_batches = [];
+    let output_batches = [];
     let output_batch = [];
     let instance_of = [];
     let of_batch = [];
@@ -462,6 +111,46 @@ parseString(xml, {explicitArray: false} , function (err, result) {
 
 
     let TransactionsData_element;
+    let InternalTransactionsList_element;
+    let InternalTransaction_elements;
+    let InternalTransactionIdentifiers_element;
+    let internal_transaction_id;
+    let internal_transaction_uid;
+    let BatchesInformation_element;
+    let InputBatchesList_element;
+    let Batch_elements;
+    let BatchIdentifiers_element;
+    let batch_id;
+    let object_key;
+    let batch_uid;
+    let BatchData_element;
+    let OutputBatchesList_element;
+    let InternalTransactionData_element;
+    let business_location_id;
+    let business_location_key;
+    let ExternalTransactionsList_element;
+    let ExternalTransaction_elements;
+    let externaltransac;
+    let ExternalTransactionIdentifiers_element;
+    let external_transaction_id;
+    let external_transaction_uid;
+    let BatchesList_element;
+    let ExternalTransactionData_element;
+    let source_business_location_id;
+    let source_business_location_key;
+    let dest_business_location_id;
+    let dest_business_location_key;
+    let transaction_flow;
+
+    let VisibilityEventData_element;
+    let VisibilityEventsList_element;
+    let Event_elements;
+    let e_event;
+    let EventIdentifiers_element;
+    let event_id;
+    let event_uid;
+    let batch_key;
+    let EventData_element;
 
 
 
@@ -482,6 +171,7 @@ parseString(xml, {explicitArray: false} , function (err, result) {
         Error('Missing version number attribute for OriginTrailExport element!');
     } else {
         export_version = result.OriginTrailExport['version'];
+        console.log(export_version);
     }
 
     //data-provider
@@ -524,7 +214,7 @@ parseString(xml, {explicitArray: false} , function (err, result) {
         Error('Missing Participant element for ParticipantsList');
     } else {
         Participant_elements = result.OriginTrailExport.MasterData.ParticipantsList.Participant;
-        
+
 
     }
 
@@ -653,8 +343,8 @@ parseString(xml, {explicitArray: false} , function (err, result) {
         locations[business_location_id]['vertex_key'] = md5('business_location_' + business_location_uid);
 
         owned_by.push({
-            '_from': locations[business_location_id]['_key'],
-            '_to': business_location_owner_key,
+            '_from': 'ot_vertices/' + locations[business_location_id]['_key'],
+            '_to': 'ot_vertices/' + business_location_owner_key,
             '_key': md5(business_location_owner_key + '_' + locations[business_location_id]['_key'])
         })
     }
@@ -738,23 +428,698 @@ parseString(xml, {explicitArray: false} , function (err, result) {
     ////Reading internal transactions data
     let transaction_list = findValuesHelper(TransactionsData_element, 'InternalTransactionsList', [])
     if (transaction_list.length <= 0) {
+        Error('Missing InternalTransactionList element for TransactionData');
+    } else {
+        InternalTransactionsList_element = TransactionsData_element.InternalTransactionsList;
+    }
+
+    let internal_transaction = findValuesHelper(InternalTransactionsList_element, 'InternalTransaction', [])
+    if (internal_transaction.length <= 0) {
         Error('Missing InternalTransaction element for InternalTransactionsList!');
     } else {
-        InternalTransaction_elements = TransactionsData_element.InternalTransaction;
+        InternalTransaction_elements = InternalTransactionsList_element.InternalTransaction;
+    }
+
+    if (!(InternalTransaction_elements instanceof Array)) {
+        let temp_internaltrans_elements = InternalTransaction_elements;
+        InternalTransaction_elements = [];
+        InternalTransaction_elements.push(temp_internaltrans_elements);
+    }
+
+    for (i in InternalTransaction_elements)
+    {
+        transaction = InternalTransaction_elements[i];
+
+        let internal_transaction_identifiers = findValuesHelper(transaction, 'InternalTransactionIdentifiers', [])
+        if (internal_transaction_identifiers.length <= 0) {
+            Error('Missing InternalTransactionIdentifiers element for InternalTransaction!');
+        } else {
+            InternalTransactionIdentifiers_element = transaction.InternalTransactionIdentifiers;
+        }
+
+        let internaltransactionid = findValuesHelper(transaction, 'InternalTransactionId', [])
+        if (internaltransactionid.length <= 0) {
+            Error('Missing InternalTransactionId for InternalTransaction!');
+        } else {
+            internal_transaction_id = InternalTransactionIdentifiers_element.InternalTransactionId;
+        }
+
+        internal_transaction_uid = 'ot:' + data_provider_id + ':ottid:' + internal_transaction_id;
+
+        let batches_info = findValuesHelper(transaction, 'BatchesInformation', [])
+        if (batches_info <= 0) {
+            Error('Missing BatchesInformation element for InternalTransaction!');
+        } else {
+            BatchesInformation_element = transaction.BatchesInformation;
+        }
+    }
+
+    let inputbatches_list = findValuesHelper(BatchesInformation_element, 'InputBatchesList', [])
+    if (inputbatches_list.length <= 0) {
+        Error('Missing InputBatchesList for BatchesInformation!');
+    } else {
+        InputBatchesList_element = BatchesInformation_element.InputBatchesList;
+    }
+
+    let batch = findValuesHelper(InputBatchesList_element, 'Batch', [])
+    if (batch.length <= 0) {
+        Error('Missing Batch for InputBatchesList_element!');
+    } else {
+        Batch_elements = InputBatchesList_element.Batch;
+    }
+
+    if (!(Batch_elements instanceof Array)) {
+        let temp_batch_elements = Batch_elements;
+        Batch_elements = [];
+        Batch_elements.push(temp_batch_elements);
+    }
+
+    for (i in Batch_elements)
+    {
+        batch = Batch_elements[i];
+        let batch_ident = findValuesHelper(batch, 'BatchIdentifiers', [])
+        if (batch_ident <= 0) {
+            Error('Missing BatchIdentifiers element for Batch!');
+        } else {
+            BatchIdentifiers_element = batch.BatchIdentifiers;
+        }
+
+        let batchid = findValuesHelper(BatchIdentifiers_element, 'BatchId', [])
+        if (batchid.length <= 0) {
+            Error('Missing BatchId for Batch!');
+        } else {
+            batch_id = BatchIdentifiers_element.BatchId;
+        }
+
+        let objectid = findValuesHelper(BatchIdentifiers_element, 'ObjectId', [])
+        if (objectid <= 0) {
+            Error('Missing ObjectId for Batch!');
+        } else {
+            object_id = BatchIdentifiers_element.ObjectId;
+        }
+
+        if(objects[object_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            object_key = objects[object_id]['_key'];
+        }
+
+
+
+        batch_uid = 'ot:' + data_provider_id + ':otoid:' + object_id + ':otbid:' + batch_id;
+
+
+
+        let batchdata = findValuesHelper(batch, 'BatchData', [])
+        if (batchdata <= 0) {
+            Error('Missing BatchData element for Batch!');
+        } else {
+            BatchData_element = batch.BatchData;
+        }
+
+        batches[batch_uid] = {};
+        batches[batch_uid]['identifiers'] = BatchIdentifiers_element;
+        batches[batch_uid]['identifiers']['uid'] = batch_uid;
+        batches[batch_uid]['data'] = BatchData_element;
+        batches[batch_uid]['_key'] = md5('batch_' + batch_uid);
+        batches[batch_uid]['vertex_key'] = md5('batch_' + batch_uid);
+
+        input_batches.push(md5('batch_' + batch_uid));
+
+        instance_of.push({
+                '_from': 'ot_vertices/' + batches[batch_uid]['vertex_key'],
+                '_to': 'ot_vertices/' + object_key,
+                '_key': md5(batches[batch_uid]['vertex_key'] + '_' + object_key)
+            })
+
+    }
+
+
+    // # Reading output units for internal transaction
+    let outputbatcheslist = findValuesHelper(BatchesInformation_element, 'OutputBatchesList', [])
+    if (outputbatcheslist.length <= 0) {
+        Error('Missing OutputBatchesList element for BatchesInformation');
+    } else {
+        OutputBatchesList_element = BatchesInformation_element.OutputBatchesList;
+    }
+
+    let outbatch = findValuesHelper(OutputBatchesList_element, 'Batch', [])
+    if (outbatch.length <= 0) {
+        Error('Missing Batch element for OutputBatchesList');
+    } else {
+        Batch_elements = OutputBatchesList_element.Batch;
+    }
+
+    if (!(Batch_elements instanceof Array)) {
+        let temp_batch_elements = Batch_elements;
+        Batch_elements = [];
+        Batch_elements.push(temp_batch_elements);
+    }
+
+    for (i in Batch_elements) {
+        batch = Batch_elements[i];
+
+
+        let outbatch = findValuesHelper(batch, 'BatchIdentifiers', [])
+        if (outbatch.length <= 0) {
+            Error('Missing BatchIdentifiers element for Batch');
+        } else {
+            BatchIdentifiers_element = batch.BatchIdentifiers;
+        }
+
+
+        let batchidd = findValuesHelper(BatchIdentifiers_element, 'BatchId', [])
+        if (batchidd.length <= 0) {
+            Error('Missing BatchId element for BatchIdentifiers');
+        } else {
+            batch_id = BatchIdentifiers_element.BatchId;
+        }
+
+        let objecttid = findValuesHelper(BatchIdentifiers_element, 'ObjectId', [])
+        if (objecttid.length <= 0) {
+            Error('Missing ObjectId element for BatchIdentifiers');
+        } else {
+            object_id = BatchIdentifiers_element.ObjectId;
+        }
+
+        if(objects[object_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            object_key = objects[object_id]['_key'];
+        }
+
+        batch_uid = 'ot:' + data_provider_id + ':otoid:' + object_id + ':otbid:' + batch_id;
+
+        let objdata = findValuesHelper(batch, 'BatchData', [])
+        if (objdata.length <= 0) {
+            Error('Missing BatchData element for Batch');
+        } else {
+            BatchData_element = batch.BatchData;
+        }
+
+        batches[batch_uid] = {};
+        batches[batch_uid]['identifiers'] = BatchIdentifiers_element;
+        batches[batch_uid]['identifiers']['uid'] = batch_uid;
+        batches[batch_uid]['data'] = BatchData_element;
+        batches[batch_uid]['_key'] = md5('batch_' + batch_uid);
+        batches[batch_uid]['vertex_key'] = md5('batch_' + batch_uid);
+
+        output_batches.push(md5('batch_' + batch_uid));
+
+        instance_of.push({
+            '_from': 'ot_vertices/' + batches[batch_uid]['vertex_key'],
+            '_to': 'ot_vertices/' + object_key,
+            '_key': md5(batches[batch_uid]['vertex_key'] + '_' + object_key)
+        })
+    }
+
+
+    let internaltransactiondata = findValuesHelper(InternalTransaction_elements, 'InternalTransactionData', [])
+    if (internaltransactiondata.length <= 0) {
+        Error('Missing InternalTransactionData element for InternalTransaction element');
+    } else {
+        InternalTransactionData_element = InternalTransaction_elements.InternalTransactionData;
+    }
+
+    let bussinesloc = findValuesHelper(InternalTransactionData_element, 'BusinessLocationId', [])
+    if (bussinesloc.length <= 0) {
+        Error('Missing BusinessLocationId element for InternalTransactionData element');
+    } else {
+        business_location_id = InternalTransactionData_element.BusinessLocationId;
+    }
+
+    if(locations[business_location_id] == undefined) {
+        Error('Key is not defined');
+    } else {
+        business_location_key = locations[business_location_id]['_key'];
+    }
+
+    transactions[internal_transaction_id] = {};
+    transactions[internal_transaction_id]['identifiers'] = InternalTransactionIdentifiers_element;
+    transactions[internal_transaction_id]['identifiers']['uid'] = internal_transaction_uid;
+    transactions[internal_transaction_id]['identifiers']['TransactionId'] = internal_transaction_id;
+    transactions[internal_transaction_id]['data'] = InternalTransactionData_element;
+    transactions[internal_transaction_id]['TransactionType'] = 'InternalTransaction';
+    transactions[internal_transaction_id]['_key'] = md5('transaction_' + internal_transaction_uid);
+    transactions[internal_transaction_id]['vertex_key'] = md5('transaction_' + internal_transaction_uid);
+
+    at.push({
+        '_from': 'ot_vertices/' + transactions[internal_transaction_id]['_key'],
+        '_to': 'ot_vertices/' + business_location_key,
+        '_key': md5(transactions[internal_transaction_id]['_key'] + '_' + business_location_key)
+    })
+
+    for(i in input_batches) {
+        input_batch.push({
+            '_from': 'ot_vertices/' + transactions[internal_transaction_id]['_key'],
+            '_to': 'ot_vertices/' + input_batches[i],
+            '_key': md5(transactions[internal_transaction_id]['_key'] + '_' + input_batches[i])
+        })
+    }
+
+    for(i in output_batches) {
+            output_batch.push({
+                '_from': 'ot_vertices/' + output_batches[i],
+                '_to': 'ot_vertices/' + transactions[internal_transaction_id]['_key'],
+                '_key': md5(transactions[internal_transaction_id]['_key'] + '_' + output_batches[i])
+            })
+    }
+
+
+    //Reading external transactions data
+
+    let externaltransactionslis = findValuesHelper(TransactionsData_element, 'ExternalTransactionsList', [])
+    if (externaltransactionslis.length <= 0) {
+        Error('Missing ExternalTransactionsList element for TransactionData element');
+    } else {
+        ExternalTransactionsList_element = TransactionsData_element.ExternalTransactionsList;
+    }
+
+    let external = findValuesHelper(ExternalTransactionsList_element, 'ExternalTransaction', [])
+    if (external.length <= 0) {
+        Error('Missing ExternalTransaction element for ExternalTransactionsList element');
+    } else {
+        ExternalTransaction_elements = TransactionsData_element.ExternalTransactionsList;
+    }
+
+    if (!(ExternalTransaction_elements instanceof Array)) {
+        let temp_external_elements = ExternalTransaction_elements;
+        ExternalTransaction_elements = [];
+        ExternalTransaction_elements.push(temp_external_elements);
+    }
+
+    for(i in ExternalTransaction_elements) {
+        externaltransac = ExternalTransaction_elements[i];
+
+        let externalident = findValuesHelper(externaltransac, 'ExternalTransactionIdentifiers', [])
+        if (externalident.length <= 0) {
+            Error('Missing ExternalTransactionIdentifiers element for ExternalTransaction element');
+        } else {
+            ExternalTransactionIdentifiers_element = externaltransac.ExternalTransactionIdentifiers;
+        }
+
+        let externalid = findValuesHelper(ExternalTransactionIdentifiers_element, 'ExternalTransactionId', [])
+        if (externalid.length <= 0) {
+            Error('Missing ExternalTransactionId element for ExternalTransactionIdentifiers element');
+        } else {
+            external_transaction_id = ExternalTransactionIdentifiers_element.ExternalTransactionId;
+        }
+
+        external_transaction_uid = 'ot:' + data_provider_id + ':ottid:' + external_transaction_id;
+
+        let batchesinfo = findValuesHelper(externaltransac, 'BatchesInformation', [])
+        if (batchesinfo.length <= 0) {
+            Error('Missing BatchesInformation element for ExternalTransaction element');
+        } else {
+            BatchesInformation_element = externaltransac.BatchesInformation;
+        }
+
+        //Reading batches for external transaction
+
+        let batchlist = findValuesHelper(BatchesInformation_element, 'BatchesList', [])
+        if (batchlist.length <= 0) {
+            Error('Missing BatchesList element for BatchesInformation element');
+        } else {
+            BatchesList_element = BatchesInformation_element.BatchesList;
+        }
+
+        let bat = findValuesHelper(BatchesList_element, 'Batch', [])
+        if (bat.length <= 0) {
+            Error('Missing Batch element for BatchesIList element');
+        } else {
+            Batch_elements = BatchesList_element.Batch;
+        }
+
+        if (!(Batch_elements instanceof Array)) {
+            let temp_bat_elements = Batch_elements;
+            Batch_elements = [];
+            Batch_elements.push(temp_bat_elements);
+        }
+
+        transfered_batches = [];
+
+        for (i in Batch_elements) {
+            bat = Batch_elements[i];
+
+            let batiden = findValuesHelper(bat, 'BatchIdentifiers', [])
+            if (batiden.length <= 0) {
+                Error('Missing BatchIdentifiers element for Batch');
+            } else {
+                BatchIdentifiers_element = bat.BatchIdentifiers;
+            }
+
+            let batid = findValuesHelper(BatchIdentifiers_element, 'BatchId', [])
+            if (batid.length <= 0) {
+                Error('Missing BatchId element for BatchIdentifiers element');
+            } else {
+                batch_id = BatchIdentifiers_element.BatchId;
+            }
+
+            let objecid = findValuesHelper(BatchIdentifiers_element, 'ObjectId', [])
+            if (objecid.length <= 0) {
+                Error('Missing ObjectId element for BatchIdentifiers element');
+            } else {
+                object_id = BatchIdentifiers_element.ObjectId;
+            }
+
+            if(objects[object_id] == undefined) {
+                Error('Key is not defined');
+            } else {
+                object_key = objects[object_id]['_key'];
+            }
+
+            batch_uid = 'ot:' + data_provider_id + ':otoid:' + object_id + ':otbid:' + batch_id;
+
+            let batdata = findValuesHelper(bat, 'BatchData', [])
+            if (batdata.length <= 0) {
+                Error('Missing BatchData element for Batch');
+            } else {
+                BatchData_element = bat.BatchData;
+            }
+
+            batches[batch_uid] = {};
+            batches[batch_uid]['identifiers'] = BatchIdentifiers_element;
+            batches[batch_uid]['identifiers']['uid'] = batch_uid;
+            batches[batch_uid]['data'] = BatchData_element;
+            batches[batch_uid]['_key'] = md5('batch_' + batch_uid);
+            batches[batch_uid]['vertex_key'] = md5('batch_' + batch_uid);
+
+            transfered_batches.push(md5('batch_' + batch_uid));
+
+            instance_of.push({
+                '_from': 'ot_vertices/' + batches[batch_uid]['vertex_key'],
+                '_to': 'ot_vertices/' + object_key,
+                '_key': md5(batches[batch_uid]['vertex_key'] + '_' + object_key)
+            })
+
+
+        }
+
+        let exttrandat = findValuesHelper(externaltransac, 'ExternalTransactionData', [])
+        if (exttrandat.length <= 0) {
+            Error('Missing ExternalTransactionData element for ExternalTransaction element');
+        } else {
+            ExternalTransactionData_element = externaltransac.ExternalTransactionData;
+        }
+
+        let bussloc_id = findValuesHelper(ExternalTransactionData_element, 'BusinessLocationId', [])
+        if (bussloc_id.length <= 0) {
+            Error('Missing BusinessLocationId element for ExternalTransactionData element');
+        } else {
+            business_location_id = ExternalTransactionData_element.BusinessLocationId;
+        }
+
+        if(locations[business_location_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            business_location_key = locations[business_location_id]['_key'];
+        }
+
+        source_business_location_id = ExternalTransactionData_element['SourceBusinessLocationId'];
+
+        if(locations[source_business_location_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            source_business_location_key = locations[source_business_location_id]['_key'];
+        }
+
+        dest_business_location_id = ExternalTransactionData_element['DestinationBusinessLocationId'];
+
+        if(locations[dest_business_location_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            dest_business_location_key = locations[dest_business_location_id]['_key'];
+        }
+
+        let transflow = findValuesHelper(ExternalTransactionData_element, 'TransactionFlow', [])
+        if (transflow.length <= 0) {
+            Error('Missing TransactionFlow element for ExternalTransaction element');
+        } else {
+            transaction_flow = ExternalTransactionData_element.TransactionFlow;
+        }
+
+        if (!transaction_flow == 'Input' || transaction_flow == 'Output') {
+            Error('Invalid value for TransactionFlow element!');
+        }
+
+        transactions[external_transaction_id] = {};
+        transactions[external_transaction_id]['identifiers'] = ExternalTransactionIdentifiers_element;
+        transactions[external_transaction_id]['identifiers']['uid'] = external_transaction_uid;
+        transactions[external_transaction_id]['identifiers']['TransactionId'] = external_transaction_id;
+        transactions[external_transaction_id]['transcation_flow'] = transaction_flow;
+        transactions[external_transaction_id]['data'] = ExternalTransactionData_element;
+        transactions[internal_transaction_id]['TransactionType'] = 'ExternalTransaction';
+        transactions[external_transaction_id]['_key'] = md5('transaction_' + external_transaction_uid);
+        transactions[internal_transaction_id]['vertex_key'] = md5('transaction_' + internal_transaction_uid);
+
+        at.push({
+            '_from': 'ot_vertices/' + transactions[external_transaction_id]['_key'],
+            '_to': 'ot_vertices/' + business_location_key,
+            '_key': md5(transactions[external_transaction_id]['_key'] + '_' + business_location_key)
+        })
+
+        from.push({
+            '_from': 'ot_vertices/' + transactions[external_transaction_id]['_key'],
+            '_to': 'ot_vertices/' + source_business_location_key,
+            '_key': md5(transactions[external_transaction_id]['_key'] + '_' + source_business_location_key)
+        })
+
+        to.push({
+            '_from': 'ot_vertices/' + transactions[external_transaction_id]['_key'],
+            '_to': 'ot_vertices/' + dest_business_location_key,
+            '_key': md5(transactions[external_transaction_id]['_key'] + '_' + dest_business_location_key)
+        })
+
+        for (i in transfered_batches) {
+            of_batch.push({
+                '_from': 'ot_vertices/' + transfered_batches[i],
+                '_to': 'ot_vertices/' + transactions[external_transaction_id]['_key'],
+                '_key': md5(transactions[external_transaction_id]['_key'] + '_' + transfered_batches[i])
+            })
+        }
+
+
+    }
+
+    ///Reading visibility data
+
+    let visibility_eventdata = findValuesHelper(OriginTrailExport_element, 'VisibilityEventData', [])
+    if (visibility_eventdata.length <= 0) {
+        Error('Missing VisibilityEventData element for OriginTrailExport element');
+    } else {
+        VisibilityEventData_element = OriginTrailExport_element.VisibilityEventData;
+    }
+
+    let visibility_event_li = findValuesHelper(VisibilityEventData_element, 'VisibilityEventsList', [])
+    if (visibility_event_li.length <= 0) {
+        Error('Missing VisibilityEventsList element for VisibilityEventData element');
+    } else {
+        VisibilityEventsList_element = VisibilityEventData_element.VisibilityEventData;
+    }
+
+    let event = findValuesHelper(VisibilityEventsList_element, 'Event', [])
+    if (event.length <= 0) {
+        Error('Missing Event element for VisibilityEventsList element');
+    } else {
+        Event_elements = VisibilityEventsList_element.Event;
+    }
+
+    if (!(Event_elements instanceof Array)) {
+        let temp_event_elements = Event_elements;
+        Event_elements = [];
+        Event_elements.push(temp_event_elements);
+    }
+
+    for (i in Event_elements) {
+        e_event = Event_elements[i];
+
+        let event_ident = findValuesHelper(e_event, 'EventIdentifiers', [])
+        if (event_ident.length <= 0) {
+            Error('Missing EventIdentifiers element for Event');
+        } else {
+            EventIdentifiers_element = e_event.EventIdentifiers;
+        }
+
+        let eventid = findValuesHelper(EventIdentifiers_element, 'EventId', [])
+        if (eventid.length <= 0) {
+            Error('Missing EventId element for EventIdentifiers');
+        } else {
+            event_id = EventIdentifiers_element.EventId;
+        }
+
+        event_uid = 'ot:' + data_provider_id + ':oteid:' + event_id;
+
+        let obid = findValuesHelper(EventIdentifiers_element, 'ObjectId', [])
+        if (obid.length <= 0) {
+            Error('Missing ObjectId element for EventIdentifiers');
+        } else {
+            object_id = EventIdentifiers_element.ObjectId;
+        }
+
+        if(objects[object_id] == undefined) {
+            Error('Key is not defined');
+        } else {
+            object_key = objects[object_id]['_key'];
+        }
+
+        let bacid = findValuesHelper(EventIdentifiers_element, 'BatchId', [])
+        if (bacid.length <= 0) {
+            Error('Missing ObjectId element for EventIdentifiers');
+        } else {
+            batch_id = EventIdentifiers_element.BatchId;
+        }
+
+        batch_uid = 'ot:' + data_provider_id + ':otoid:'+ object_id + ':otbid:' + batch_id;
+
+        if(batches[batch_uid] == undefined) {
+            Error('Key is not defined');
+        } else {
+            batch_key = batches[batch_uid]['_key'];
+        }
+
+        let eventdat = findValuesHelper(e_event, 'EventData', [])
+        if (eventdat.length <= 0) {
+            Error('Missing EventData element for Event');
+        } else {
+            EventData_element = e_event.EventData;
+        }
+
+        events[event_id] = {};
+        events[event_id]['identifiers'] = EventIdentifiers_element;
+        events[event_id]['identifiers']['uid'] = event_uid;
+        events[event_id]['data'] = EventData_element;
+        events[event_id]['_key'] = md5('event_' + event_uid);
+        events[event_id]['vertex_key'] = md5('event_' + event_uid);
+
+        traced_by.push({
+            '_from': 'ot_vertices/' + batch_key,
+            '_to': 'ot_vertices/' + events[event_id]['vertex_key'],
+            '_key': md5(batch_key + '_' + events[event_id]['vertex_key'])
+        })
+
+
     }
 
 
 
 
+    console.log(events);
 
 
 
-    // let ima = findValuesHelper(objects, 'ean14', []);
-    // if (ima.length > 0) {
-    //     console.log('ima')
-    // } else {
-    //     console.log('nema')
-    // }
+
+    //***** PARTICIPANTS UPISIVANJE *******//
+    // console.log(participants)
+    var tmp = []
+
+    for(i in participants) {
+        tmp.push(participants[i]);
+    }
+
+    async.each(tmp, function(participant, next) {
+        participant.vertex_type = 'PARTICIPANTS';
+        db.addVertex('ot_vertices', participant, function () {
+            console.log('upisano')
+            next();
+        });
+    }, function() {
+        console.log('Upisivanje participants gotovo')
+    });
+
+
+
+    //***** LOCATIONS UPISIVANJE *******//
+    // console.log(locations);
+    var locations_temp = [];
+
+    for(i in locations) {
+        locations_temp.push(locations[i]);
+    }
+
+    async.each(locations_temp, function (location, next) {
+        location.vertex_type = 'LOCATIONS';
+        db.addVertex('ot_vertices', location, function () {
+            console.log('upisano');
+            next();
+        });
+    }, function () {
+        console.log('Upisivanje locations gotovo');
+    });
+
+
+    //***** OBJECTS UPISIVANJE *******//
+    var temp_objects = [];
+
+    for (i in objects) {
+        temp_objects.push(objects[i]);
+    }
+
+    async.each(temp_objects, function (object, next) {
+        object.vertex_type = 'OBJECTS';
+        db.addVertex('ot_vertices', object, function () {
+            console.log('object upisan');
+            next();
+        })
+    }, function () {
+        console.log('svi objekti upisani');
+    });
+
+    //***** BATCHES UPISIVANJE *******//
+    var temp_batches = [];
+
+    for (i in batches) {
+        temp_batches.push(batches[i]);
+    }
+
+    async.each(temp_batches, function (batch, next) {
+        batch.vertex_type = 'BATCHES';
+        db.addVertex('ot_vertices', batch, function () {
+            console.log('batch upisan');
+            next();
+        })
+    }, function () {
+        console.log('svi batches upisani');
+    });
+
+
+    // var edge = {};
+    // edge._key = '123213123213'
+    // edge._from = 'ot_vertices/' + tmp[0]._key;
+    // edge._to = 'ot_vertices/' + tmp[1]._key;
+
+
+    //******* UPISIVANJE CVOROVA *******//
+
+    async.each(owned_by, function (own, next) {
+        db.addEdge('ot_edges', own, function () {
+            console.log('edge upisan');
+            next();
+        })
+    }, function () {
+        console.log('svi edges upisani');
+    });
+
+    async.each(input_batches, function (input, next) {
+        db.addEdge('ot_edges', input, function () {
+            console.log('input edge upisan');
+            next();
+        })
+    }, function () {
+        console.log('svi input edges upisani');
+    });
+
+    async.each(instance_of, function (input, next) {
+        db.addEdge('ot_edges', input, function () {
+            console.log('input edge upisan');
+            next();
+        })
+    }, function () {
+        console.log('svi input edges upisani');
+    });
+
+
+
+
 
     // console.log(JSON.stringify(objects, null, 4));
     var json = JSON.stringify(objects, null, 4);
@@ -763,5 +1128,6 @@ parseString(xml, {explicitArray: false} , function (err, result) {
     });
 
 
-});
+})
+
 
