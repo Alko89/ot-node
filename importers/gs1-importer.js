@@ -8,7 +8,9 @@ const async = require('async');
 var path = require('path');
 
 var gs1_xml;
-gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:n1="http://www.altova.com/samplexml/other-namespace" xmlns:sbdh="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader" schemaVersion="0" creationDate="2001-12-17T09:30:47Z" xsi:schemaLocation="urn:epcglobal:epcis-masterdata:xsd:1 EPCglobal-epcis-masterdata-1_2.xsd">
+gs1_xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!--Sample XML file for GS1 OriginTrail importer with Header with master data and ObjectEvent-->
+<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:n1="http://www.altova.com/samplexml/other-namespace" xmlns:sbdh="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader" schemaVersion="0" creationDate="2001-12-17T09:30:47Z" xsi:schemaLocation="urn:epcglobal:epcis-masterdata:xsd:1 EPCglobal-epcis-masterdata-1_2.xsd">
 	<EPCISHeader>
 		<sbdh:StandardBusinessDocumentHeader>
 			<sbdh:HeaderVersion>1.0</sbdh:HeaderVersion>
@@ -45,17 +47,24 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 		<extension>
 			<EPCISMasterData>
 				<VocabularyList>
-					<!-- GS1 standard -->
+					<!-- GS1 standard -->	
 					<Vocabulary type="urn:epcglobal:epcis:vtype:BusinessLocation">				
-						<VocabularyElementList>				
-							<VocabularyElement id="urn:epc:id:sgln:6104898.16234.0">				
-								<attribute id="urn:ts:location:partnerId">61048989213</attribute>				
+						<VocabularyElementList>										
+							<VocabularyElement id="urn:epc:id:sgln:6104898.16234.0">																
 								<attribute id="urn:ts:location:name">XYZ Retail</attribute>				
 								<attribute id="urn:ts:location:street1">Via Ignatia 768</attribute>				
 								<attribute id="urn:ts:location:city">Bari</attribute>				
 								<attribute id="urn:ts:location:stateOrRegion">Puglia</attribute>				
 								<attribute id="urn:ts:location:postalCode">98852</attribute>
 								<attribute id="urn:ts:location:country">IT</attribute>
+								<children>
+									<id>6104898.16234.1</id>
+									<id>6104898.16234.2</id>
+									<id>6104898.16234.3</id>
+								</children>
+								<extension>
+									<attribute id="urn:ot:location:participantId">SC12345.F0003</attribute>
+								</extension>
 						    </VocabularyElement>		
 						    <VocabularyElement id="urn:epc:id:sgln:8635411.16763.2">				
 								<attribute id="urn:ts:location:partnerId">8635411167632</attribute>				
@@ -65,48 +74,55 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 								<attribute id="urn:ts:location:stateOrRegion">England</attribute>				
 								<attribute id="urn:ts:location:postalCode">453674</attribute>
 								<attribute id="urn:ts:location:country">GB</attribute>
+								<children>
+									<id>8635411.16763.22</id>
+									<id>8635411.16763.23</id>
+								</children>
+								<extension>
+									<attribute id="urn:ot:location:participantId">SC12345.F0002</attribute>
+								</extension>
 							</VocabularyElement>			
 						</VocabularyElementList>				
-					</Vocabulary>					
+					</Vocabulary>				
 					<!-- OT custom standard -->
-					<Vocabulary type="http://epcis.origintrail.io/masterdata/participant">
-						<VocabularyElementList>
-							<VocabularyElement id="urn:ot:mda:participant:SC34254.F0003">
+					<Vocabulary type="urn:ot:mda:participant">
+						<extension>						
+							<OTVocabularyElement id="urn:ot:mda:participant:SC34254.F0003">
 								<attribute id="urn:ot:mda:participant:name">XYZ Retail</attribute>								
 								<attribute id="urn:ot:mda:participant:location">urn:epc:id:sgln:6104898.16234.0</attribute>														
-							</VocabularyElement>
-						</VocabularyElementList>
+							</OTVocabularyElement>
+						</extension>						
 					</Vocabulary>					
 					<!-- OT custom standard -->
-					<Vocabulary type="http://epcis.origintrail.io/masterdata/object">
-						<VocabularyElementList>
-							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333">								
+					<Vocabulary type="urn:ot:mda:object">
+						<extension>
+							<OTVocabularyElement id="urn:epc:id:sgtin:8635411.000333">								
 								<attribute id="urn:ot:mda:object:name">Winter sallad mix</attribute>
 							    <attribute id="urn:ot:mda:object:type">Sallad</attribute>
 								<attribute id="urn:ot:mda:object:category">Fresh salad</attribute>
 								<attribute id="urn:ot:mda:object:ean13">8438454123998</attribute>																	
-							</VocabularyElement>
-						</VocabularyElementList>
+							</OTVocabularyElement>
+						</extension>
 					</Vocabulary>					
 					<!-- OT custom standard -->
-					<Vocabulary type="http://epcis.origintrail.io/masterdata/batch">
-						<VocabularyElementList>	
-							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00001">
+					<Vocabulary type="urn:ot:mda:batch">
+						<extension>	
+							<OTVocabularyElement id="urn:epc:id:sgtin:8635411.000333.00001">
 								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
 							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:01:54Z</attribute>
 								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:01:54Z</attribute>
-							</VocabularyElement>
-							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00002">
+							</OTVocabularyElement>
+							<OTVocabularyElement id="urn:epc:id:sgtin:8635411.000333.00002">
 								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
 							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:02:54Z</attribute>
 								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:02:54Z</attribute>
-							</VocabularyElement>						
-							<VocabularyElement id="urn:epc:id:sgtin:8635411.000333.00003">
+							</OTVocabularyElement>						
+							<OTVocabularyElement id="urn:epc:id:sgtin:8635411.000333.00003">
 								<attribute id="urn:ot:mda:batch:objectid">urn:epc:id:sgtin:8635411.000333</attribute>
 							    <attribute id="urn:ot:mda:batch:productiondate">2018-03-03T00:03:54Z</attribute>
 								<attribute id="urn:ot:mda:batch:expirationdate">2018-04-03T00:03:54Z</attribute>
-							</VocabularyElement>																
-						</VocabularyElementList>
+							</OTVocabularyElement>																
+						</extension>
 					</Vocabulary>
 				</VocabularyList>
 			</EPCISMasterData>
@@ -117,6 +133,9 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 			 <ObjectEvent>
 				 <eventTime>2017-07-15T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
 				 <eventTimeZoneOffset>-04:00</eventTimeZoneOffset> <!-- Mandatory-->
+				 <baseExtension> <!-- Optional -->
+					 <eventID>ID12345670001</eventID>
+				 </baseExtension>
     			 <epcList> <!-- Mandatory-->
 					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
 					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
@@ -126,7 +145,7 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
 				 <disposition>urn:epcglobal:cbv:disp:active</disposition> <!-- Optional -->
 				 <readPoint> <!-- Optional -->
-					 <id>urn:epc:id:sgln:8635411.16763.2</id>
+					 <id>urn:epc:id:sgln:8635411.16763.22</id>
 				 </readPoint>
 				 <bizLocation> <!-- Optional -->
 					 <id>urn:epc:id:sgln:8635411.16763.2</id>
@@ -149,6 +168,12 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 							 <uom>KG</uom>
 						 </quantityElement>
 					 </quantityList>
+					 <sourceList> <!-- Optional -->
+						 <source type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:8635411.16763.2</source>
+					 </sourceList>
+					 <destinationList> <!-- Optional -->
+						 <destination type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:6104898.16234.0</destination>
+					 </destinationList>
 					 <extension>  <!-- Optional -->
 						 <TemperatureC>15</TemperatureC>  <!-- Optional -->
 						 <RelativeHumidity>80</RelativeHumidity>  <!-- Optional -->
@@ -158,6 +183,9 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 			 <ObjectEvent>
 				 <eventTime>2017-07-16T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
 				 <eventTimeZoneOffset>-05:12</eventTimeZoneOffset> <!-- Mandatory-->
+				 <baseExtension> <!-- Optional -->
+					 <eventID>ID12345670002</eventID>
+				 </baseExtension>
     			 <epcList> <!-- Mandatory-->
 					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
 					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
@@ -166,7 +194,7 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 				 <action>OBSERVE</action> <!-- Mandatory-->
 				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
 				 <readPoint> <!-- Optional -->
-					 <id>urn:epc:id:sgln:8635411.16763.6</id>
+					 <id>urn:epc:id:sgln:6104898.16234.1</id>
 				 </readPoint>
 				 <extension>
 					 <quantityList> <!-- Optional -->
@@ -186,6 +214,12 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 							 <uom>KG</uom>
 						 </quantityElement>
 					 </quantityList>
+					 <sourceList> <!-- Optional -->
+						 <source type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:8635411.16763.2</source>
+					 </sourceList>
+					 <destinationList> <!-- Optional -->
+						 <destination type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:6104898.16234.0</destination>
+					 </destinationList>
 					 <extension>  <!-- Optional -->
 						 <TemperatureC>22</TemperatureC>  <!-- Optional -->
 						 <RelativeHumidity>17</RelativeHumidity>  <!-- Optional -->
@@ -195,16 +229,22 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 			 <ObjectEvent>
 				 <eventTime>2017-07-18T10:00:00.000-04:00</eventTime> <!-- Mandatory-->
 				 <eventTimeZoneOffset>-11:12</eventTimeZoneOffset> <!-- Mandatory-->
+				 <baseExtension> <!-- Optional -->
+					 <eventID>ID12345670003</eventID>
+				 </baseExtension>
     			 <epcList> <!-- Mandatory-->
 					 <epc>urn:epc:id:sgln:8635411.00333.00001</epc>
 					 <epc>urn:epc:id:sgln:8635411.00333.00002</epc>
 					 <epc>urn:epc:id:sgln:8635411.00333.00003</epc>
 				 </epcList>				 
 				 <action>OBSERVE</action> <!-- Mandatory-->
-				 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep> <!-- Optional -->
+				 <bizStep>urn:epcglobal:cbv:bizstep:receving</bizStep> <!-- Optional -->
 				 <readPoint> <!-- Optional -->
-					 <id>urn:epc:id:sgln:8635411.16763.22</id>
+					 <id>urn:epc:id:sgln:6104898.16234.22</id>
 				 </readPoint>
+				 <bizLocation> <!-- Optional -->
+					 <id>urn:epc:id:sgln:6104898.16234.2</id>
+				 </bizLocation>
 				 <extension>
 					 <quantityList> <!-- Optional -->
 						 <quantityElement>
@@ -223,6 +263,12 @@ gs1_xml = `<epcis:EPCISDocument xmlns:epcis="urn:epcglobal:epcis:xsd:1" xmlns:xs
 							 <uom>KG</uom>
 						 </quantityElement>
 					 </quantityList>
+					 <sourceList> <!-- Optional -->
+						 <source type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:8635411.16763.2</source>
+					 </sourceList>
+					 <destinationList> <!-- Optional -->
+						 <destination type="urn:epcglobal:cbv:sdt:location">urn:epc:id:sgln:6104898.16234.0</destination>
+					 </destinationList>
 					 <extension>  <!-- Optional -->
 						 <TemperatureC>11</TemperatureC>  <!-- Optional -->
 						 <RelativeHumidity>76</RelativeHumidity>  <!-- Optional -->
@@ -279,6 +325,11 @@ function sanitize(old_obj, new_obj, patterns)
 
 //parsing
 
+function Error(message) {
+	console.log('Error: ' + message);
+	return false;
+}
+
 
 parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (err, result) {
 
@@ -298,8 +349,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let sender_id;
 	let receiver_id;
 
-
-
 	let extension_element;
 	let EPCISMasterData_element;
 	let VocabularyList_element;
@@ -307,7 +356,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let vocabulary_element;
 	let inside;
 	let type_element;
-	let Bussines_location_elements;
+	var Bussines_location_elements;
 	let test;
 	let BusinessLocation_element;
 	let sanitized_BusinessLocation_element;
@@ -316,6 +365,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let business_location_id;
 	let sanitized_VocabularyElement_element;
 	let attribute_id;
+	let data_object = {};
 
 	///attributes - BusinessLocation
 	let partner_id;
@@ -335,11 +385,19 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let document_meta = {};
 	let locations = {};
 
+	let object_events = {};
+	let aggregation_events = {};
+	let transformation_events = {};
+
+
+	var at_edges = [];
+	var read_point_edges = [];
+	var event_batch_edges = [];
 
 	//READING EPCIS Document
 	let doc = findValuesHelper(result, 'epcis:EPCISDocument', []);
 	if (doc.length <= 0) {
-		Error('Missing EPCISDocument element!');
+		return Error('Missing EPCISDocument element!');
 	} else {
 
 		EPCISDocument_element = result['epcis:EPCISDocument'];
@@ -351,14 +409,14 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let head = findValuesHelper(sanitized_EPCIS_document, 'EPCISHeader', []);
 	if (head.length <= 0) {
-		Error('Missing EPCISHeader element for EPCISDocument element!');
+		return Error('Missing EPCISHeader element for EPCISDocument element!');
 	} else {
 		EPCISHeader_element = sanitized_EPCIS_document.EPCISHeader;
 	}
 
 	let standard_doc_header = findValuesHelper(EPCISHeader_element, 'StandardBusinessDocumentHeader', []);
 	if (standard_doc_header.length <= 0) {
-		Error('Missing StandardBusinessDocumentHeader element for EPCISHeader element!');
+		return Error('Missing StandardBusinessDocumentHeader element for EPCISHeader element!');
 	} else {
 		StandardBusinessDocumentHeader_element = EPCISHeader_element.StandardBusinessDocumentHeader;
 
@@ -368,7 +426,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	////SENDER
 	let send = findValuesHelper(StandardBusinessDocumentHeader_element, 'Sender', []);
 	if (send.length <= 0) {
-		Error('Missing Sender element for StandardBusinessDocumentHeader element!');
+		return Error('Missing Sender element for StandardBusinessDocumentHeader element!');
 	} else {
 		Sender_element = StandardBusinessDocumentHeader_element.Sender;
 
@@ -376,7 +434,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let send_id = findValuesHelper(Sender_element, 'Identifier', []);
 	if (send_id.length <= 0) {
-		Error('Missing Identifier element for Sender element!');
+		return Error('Missing Identifier element for Sender element!');
 	} else {
 		sender_id_element = Sender_element.Identifier;
 
@@ -384,7 +442,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let sendid = findValuesHelper(sender_id_element, '_', []);
 	if (sendid.length <= 0) {
-		Error('Missing _ element for sender_id element!');
+		return Error('Missing _ element for sender_id element!');
 	} else {
 		sender_id = sender_id_element['_'];
 	}
@@ -394,7 +452,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let contact_info = findValuesHelper(Sender_element, 'ContactInformation', []);
 	if (contact_info.length <= 0) {
-		Error('Missing ContactInformation element for Sender element!');
+		return Error('Missing ContactInformation element for Sender element!');
 	} else {
 		ContactInformation_element = Sender_element.ContactInformation;
 
@@ -405,7 +463,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	/////RECEIVER
 	let receive = findValuesHelper(StandardBusinessDocumentHeader_element, 'Receiver', []);
 	if (receive.length <= 0) {
-		Error('Missing Receiver element for StandardBusinessDocumentHeader element!');
+		return Error('Missing Receiver element for StandardBusinessDocumentHeader element!');
 	} else {
 		Receiver_element = StandardBusinessDocumentHeader_element.Receiver;
 
@@ -415,7 +473,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let receive_id = findValuesHelper(Receiver_element, 'Identifier', []);
 	if (receive_id.length <= 0) {
-		Error('Missing Identifier element for Receiver element!');
+		return Error('Missing Identifier element for Receiver element!');
 	} else {
 		receiver_id_element = Receiver_element.Identifier;
 
@@ -425,7 +483,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let receiveid = findValuesHelper(receiver_id_element, '_', []);
 	if (receiveid.length <= 0) {
-		Error('Missing Identifier element for Receiver element!');
+		return Error('Missing Identifier element for Receiver element!');
 	} else {
 		receiver_id = receiver_id_element['_'];
 
@@ -435,7 +493,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let contact_info_rec = findValuesHelper(Receiver_element, 'ContactInformation', []);
 	if (contact_info_rec.length <= 0) {
-		Error('Missing ContactInformation element for Receiver element!');
+		return Error('Missing ContactInformation element for Receiver element!');
 	} else {
 		ContactInformation_element_receiver = Receiver_element.ContactInformation;
 
@@ -443,7 +501,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let doc_identification = findValuesHelper(StandardBusinessDocumentHeader_element, 'DocumentIdentification', []);
 	if (doc_identification.length <= 0) {
-		Error('Missing DocumentIdentification element for StandardBusinessDocumentHeader element!');
+		return Error('Missing DocumentIdentification element for StandardBusinessDocumentHeader element!');
 	} else {
 		DocumentIdentification_element = StandardBusinessDocumentHeader_element.DocumentIdentification;
 
@@ -451,7 +509,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let bus_scope = findValuesHelper(StandardBusinessDocumentHeader_element, 'BusinessScope', []);
 	if (bus_scope.length <= 0) {
-		Error('Missing BusinessScope element for StandardBusinessDocumentHeader element!');
+		return Error('Missing BusinessScope element for StandardBusinessDocumentHeader element!');
 	} else {
 		BusinessScope_element = StandardBusinessDocumentHeader_element.BusinessScope;
 
@@ -482,28 +540,28 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	let ext = findValuesHelper(EPCISHeader_element, 'extension', []);
 	if (ext.length <= 0) {
-		Error('Missing extension element for EPCISHeader element!');
+		return Error('Missing extension element for EPCISHeader element!');
 	} else {
 		extension_element = EPCISHeader_element.extension;
 	}
 
 	let epcis_master = findValuesHelper(extension_element, 'EPCISMasterData', []);
 	if (epcis_master.length <= 0) {
-		Error('Missing EPCISMasterData element for extension element!');
+		return Error('Missing EPCISMasterData element for extension element!');
 	} else {
 		EPCISMasterData_element = extension_element.EPCISMasterData;
 	}
 
 	let vocabulary_li = findValuesHelper(EPCISMasterData_element, 'VocabularyList', []);
 	if (vocabulary_li.length <= 0) {
-		Error('Missing VocabularyList element for EPCISMasterData element!');
+		return Error('Missing VocabularyList element for EPCISMasterData element!');
 	} else {
 		VocabularyList_element = EPCISMasterData_element.VocabularyList;
 	}
 
 	let vocabulary = findValuesHelper(VocabularyList_element, 'Vocabulary', []);
 	if (vocabulary.length <= 0) {
-		Error('Missing Vocabulary element for VocabularyList element!');
+		return Error('Missing Vocabulary element for VocabularyList element!');
 	} else {
 		Vocabulary_elements = VocabularyList_element.Vocabulary;
 	}
@@ -514,7 +572,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		Vocabulary_elements.push(temp_vocabulary_elements);
 	}
 
-    
 
 	for (i in Vocabulary_elements) {
 		vocabulary_element = Vocabulary_elements[i];
@@ -525,53 +582,54 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 			vocabulary_element.push(temp_vocabularyel_elements);
 		}
 
-		for (i in vocabulary_element){
-			inside = vocabulary_element[i];
+		for (j in vocabulary_element){
+			inside = vocabulary_element[j];
 			let pro;
 
 
-			for (i in inside) {
-				pro = inside[i];
+			for (j in inside) {
+				pro = inside[j];
 
 				let typ = findValuesHelper(pro, 'type', []);
 				if (typ.length <= 0) {
-					Error('Missing type element for element!');
+					return Error('Missing type element for element!');
 				} else {
 					let v_type;
 					v_type = pro.type;
-
 
 					//////////BUSINESS_LOCATION/////////////
 					if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
 						Bussines_location_elements = pro;
 
 						let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
-						if (voc_el_list.length <= 0) {
-							Error('Missing VocabularyElementList element for element!');
+						if (voc_el_list.length == 0) {
+							return Error('Missing VocabularyElementList element for element!');
 						} else {
 							VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
 						}
 
-						for (let j in Bussines_location_elements)
+
+						for (let k in VocabularyElementList_element)
 						{
-							let one_location;
-							one_location = Bussines_location_elements[j];
 
-							let voc_el_list = findValuesHelper(one_location, 'VocabularyElement', []);
-							if (voc_el_list.length <= 0) {
-								Error('Missing VocabularyElement element for VocabularyList element!');
-							} else {
-								VocabularyElement_element = one_location.VocabularyElement;
+							let VocabularyElement_element;
+							VocabularyElement_element = VocabularyElementList_element[k];
+							/*
+                            let voc_el_list = findValuesHelper(one_location, 'VocabularyElement', []);
+                            if (voc_el_list.length <= 0) {
+                                return Error('Missing VocabularyElement element for VocabularyList element!');
+                            } else {
+                                VocabularyElement_element = one_location.VocabularyElement;
 
-							}
-
+                            }
+*/
 							for (let x in VocabularyElement_element) {
-							    let v;
+								let v;
 								v  = VocabularyElement_element[x];
 
 								let loc_id = findValuesHelper(v, 'id', []);
 								if (loc_id.length <= 0) {
-									Error('Missing id element for VocabularyElement element!');
+									return Error('Missing id element for VocabularyElement element!');
 								} else {
 									let str = v.id;
 
@@ -582,9 +640,9 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 								let attr = findValuesHelper(v, 'attribute', []);
 								if (attr.length <= 0) {
-									Error('Missing attribute element for VocabularyElement element!');
+									return Error('Missing attribute element for VocabularyElement element!');
 								} else {
-                                	let attribute;
+									let attribute;
 									attribute = v.attribute;
 
 
@@ -596,10 +654,10 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 										let att_id =  findValuesHelper(kk, 'id', []);
 										if (att_id.length <= 0) {
-										    Error('Missing id element for element!');
+											return Error('Missing id attribute for element!');
 										} else {
-                                        	let str = kk.id;
-                                        	attribute_id = str.replace('urn:ts:location:', '');
+											let str = kk.id;
+											attribute_id = str.replace('urn:ts:location:', '');
 										}
 
 										data_object[attribute_id] = kk['_'];
@@ -613,7 +671,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 								locations[business_location_id]['identifiers'] = {};
 								locations[business_location_id]['identifiers']['bussines_location_id'] = business_location_id;
 								locations[business_location_id]['data'] = data_object;
-								console.log(locations);
+								//						console.log(locations);
 							}
 
 						}
@@ -627,6 +685,180 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 
 		}
+
+
+	}
+
+	//READING EPCIS Document Body
+
+	if (findValuesHelper(EPCISDocument_element, 'EPCISBody', []).length != 0) {
+
+		let body_element = EPCISDocument_element.EPCISBody;
+
+		if(findValuesHelper(result, 'EventList', []).length == 0) {
+			return Error('Missing EventList element');
+		}
+
+		var event_list_element = body_element.EventList;
+
+
+		for(var event_type in event_list_element)
+		{
+
+			let events = [];
+
+			if(!(event_list_element[event_type].length != undefined)) {
+				events = event_list_element[event_type];
+			}
+			else {
+				events = event_list_element[event_type];
+			}
+
+
+			for(let i in events) {
+
+				let event_batches = [];
+
+				let event = events[i];
+
+				if(event_type == 'ObjectEvent') {
+
+					// eventTime
+					if(findValuesHelper(event, 'eventTime', []).length == 0) {
+						return Error('Missing eventTime element for event!');
+					}
+
+					let event_time = event.eventTime;
+
+					if(typeof event_time != 'string') {
+						return Error('Multiple eventTime elements found!');
+					}
+
+					// eventTimeZoneOffset
+					if(findValuesHelper(event, 'eventTimeZoneOffset', []).length == 0) {
+						return Error('Missing event_time_zone_offset element for event!');
+					}
+
+					let event_time_zone_offset = event.eventTimeZoneOffset;
+
+					if(typeof event_time_zone_offset != 'string') {
+						return Error('Multiple event_time_zone_offset elements found!');
+					}
+
+					let event_id = event_time + 'Z' + event_time_zone_offset;
+
+					// baseExtension + eventID
+					if(findValuesHelper(event, 'baseExtension', []).length > 0) {
+						let baseExtension_element = event.baseExtension;
+
+
+						if(findValuesHelper(baseExtension_element , 'eventID', []).length == 0) {
+							return Error('Missing eventID in baseExtension!');
+						}
+
+						let event_id = baseExtension_element.eventID;
+					}
+
+					// epcList
+					if(findValuesHelper(event, 'epcList', []).length == 0) {
+						return Error('Missing epcList elementfor event!');
+					}
+
+					let epcList = event.epcList;
+
+					if(findValuesHelper(epcList , 'epc', []).length == 0) {
+						return Error('Missing epc element in epcList for event!');
+					}
+
+					let epc = epcList.epc;
+
+					if(typeof epc == 'string') {
+						event_batches = [epc];
+					}
+					else {
+						event_batches = epc;
+					}
+
+					// readPoint
+					let read_point = undefined;
+					if(findValuesHelper(event , 'readPoint', []).length != 0) {
+						let read_point_element = event.readPoint;
+
+						if(findValuesHelper(read_point_element , 'id', []).length == 0) {
+							return Error('Missing id for readPoint!');
+						}
+
+						read_point = read_point_element.id;
+					}
+
+					// bizLocation
+					let biz_location = undefined;
+					if(findValuesHelper(event, 'bizLocation', []).length != 0) {
+						let biz_location_element = event.bizLocation;
+
+						if(findValuesHelper(biz_location_element, 'id', []).length == 0) {
+							return Error('Missing id for bizLocation!');
+						}
+
+						biz_location = biz_location_element.id;
+					}
+
+					let object_event = {
+						identifiers: {
+							eventId: event_id
+						},
+						data: event,
+						vertex_type: 'EVENT',
+						_key: md5('event_' + sender_id + '_' + event_id)
+					};
+
+					object_events[event_id] = object_event;
+
+					for(let bi in event_batches) {
+						event_batch_edges.push({
+							'_key': md5('event_batch_' + sender_id + '_' + event_id + '_' + event_batches[bi]),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi])
+						});
+					}
+
+					if(read_point != undefined) {
+						read_point_edges.push({
+							'_key': md5('read_point_' + sender_id + '_' + event_id + '_' + read_point),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point)
+						});
+					}
+
+					if(biz_location != undefined) {
+						at_edges.push({
+							'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location)
+						});
+					}
+
+
+				}
+				else if(event_type == 'AggregationEvent') {
+
+				}
+				else if(event_type == 'TransformationEvent') {
+
+				}
+				else {
+					return Error('Unsupported event type: ' + event_type);
+				}
+
+			}
+
+		}
+
+
+		console.log(object_events);
+		console.log(event_batch_edges);
+		console.log(at_edges);
+		console.log(read_point_edges);
 
 
 	}
