@@ -275,6 +275,78 @@ gs1_xml = `<?xml version="1.0" encoding="UTF-8"?>
 					 </extension>					 
 				</extension>
 			 </ObjectEvent>
+			 <AggregationEvent>
+				<eventTime>2013-06-08T14:58:56.591Z</eventTime>
+				<eventTimeZoneOffset>+02:00</eventTimeZoneOffset>
+				<parentID>urn:epc:id:sscc:0614141.1234567890</parentID>
+				<childEPCs>
+					<epc>urn:epc:id:sgtin:8635411.000333.00001</epc>
+					<epc>urn:epc:id:sgtin:8635411.000333.00002</epc>
+					<epc>urn:epc:id:sgtin:8635411.000333.00003</epc>
+				</childEPCs>
+				<action>OBSERVE</action>
+				<bizStep>urn:epcglobal:cbv:bizstep:receiving</bizStep>
+				<disposition>urn:epcglobal:cbv:disp:in_progress</disposition>
+				<readPoint>
+					<id>urn:epc:id:sgln:6104898.16234.0</id>
+				</readPoint>
+				<bizLocation>
+					<id>urn:epc:id:sgln:6104898.16234.0</id>
+				</bizLocation>
+				<extension>
+					<childQuantityList>
+						<quantityElement>
+							<epcClass>urn:epc:id:sgtin:8635411.000333.00001</epcClass>
+							<quantity>10</quantity>
+							<uom>KGM</uom>
+						</quantityElement>
+						<quantityElement>
+							<epcClass>urn:epc:id:sgtin:8635411.000333.00002</epcClass>
+							<quantity>20</quantity>
+							<uom>KGM</uom>
+						</quantityElement>
+						<quantityElement>
+							<epcClass>urn:epc:id:sgtin:8635411.000333.00003</epcClass>
+							<quantity>30</quantity>
+							<uom>KGM</uom>
+						</quantityElement>
+					</childQuantityList>
+				</extension>
+			</AggregationEvent>
+			<extension>
+				  <TransformationEvent>
+					 <eventTime>2015-03-15T00:00:00.000-04:00</eventTime> <!-- Mandatory-->
+					 <eventTimeZoneOffset>-04:00</eventTimeZoneOffset> <!-- Mandatory-->				 
+					 <inputEPCList>
+						 <epc>urn:epc:id:sgtin:0104531.000111.00001</epc>
+						 <epc>urn:epc:id:sgtin:0203212.000222.00002</epc>
+					 </inputEPCList>
+					 <inputQuantityList>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgtin:0104531.000111.00001</epcClass>
+							 <quantity>10.0</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+						 <quantityElement>
+							 <epcClass>urn:epc:idpat:sgtin:0203212.000222.00002</epcClass>
+							 <quantity>20.0</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+					 </inputQuantityList>
+					 <outputEPCList>
+						<epc>urn:epc:id:sgtin:8635411.000333.00003</epc>
+					 </outputEPCList>
+					 <outputQuantityList>
+						 <quantityElement>
+							 <epcClass>urn:epc:id:sgtin:8635411.000333.00003</epcClass>
+							 <quantity>30.0</quantity>
+							 <uom>KG</uom>
+						 </quantityElement>
+					 </outputQuantityList>					 
+					 <transformationID>BOM12345PO987</transformationID> <!-- Mandatory-->
+					 <bizStep>urn:epcglobal:cbv:bizstep:creating_class_instance</bizStep> <!-- Optional -->						 				 
+				 </TransformationEvent>
+			</extension>
 		</EventList>
 	 </EPCISBody>
 </epcis:EPCISDocument>`;
@@ -393,6 +465,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	var at_edges = [];
 	var read_point_edges = [];
 	var event_batch_edges = [];
+	var parent_batches_edges = [];
+	var child_batches_edges = [];
 
 	//READING EPCIS Document
 	let doc = findValuesHelper(result, 'epcis:EPCISDocument', []);
@@ -573,7 +647,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	}
 
 
-	for (i in Vocabulary_elements) {
+	for (let i in Vocabulary_elements) {
 		vocabulary_element = Vocabulary_elements[i];
 
 		if (!(vocabulary_element instanceof Array)) {
@@ -582,7 +656,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 			vocabulary_element.push(temp_vocabularyel_elements);
 		}
 
-		for (j in vocabulary_element){
+		for (let j in vocabulary_element){
 			inside = vocabulary_element[j];
 			let pro;
 
@@ -707,8 +781,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 			let events = [];
 
-			if(!(event_list_element[event_type].length != undefined)) {
-				events = event_list_element[event_type];
+			if(event_list_element[event_type].length == undefined) {
+				events = [event_list_element[event_type]];
 			}
 			else {
 				events = event_list_element[event_type];
@@ -745,7 +819,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						return Error('Multiple event_time_zone_offset elements found!');
 					}
 
-					let event_id = event_time + 'Z' + event_time_zone_offset;
+					let event_id = sender_id+':' + event_time + 'Z' + event_time_zone_offset;
 
 					// baseExtension + eventID
 					if(findValuesHelper(event, 'baseExtension', []).length > 0) {
@@ -756,12 +830,12 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 							return Error('Missing eventID in baseExtension!');
 						}
 
-						let event_id = baseExtension_element.eventID;
+						event_id = baseExtension_element.eventID;
 					}
 
 					// epcList
 					if(findValuesHelper(event, 'epcList', []).length == 0) {
-						return Error('Missing epcList elementfor event!');
+						return Error('Missing epcList element for event!');
 					}
 
 					let epcList = event.epcList;
@@ -818,7 +892,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						event_batch_edges.push({
 							'_key': md5('event_batch_' + sender_id + '_' + event_id + '_' + event_batches[bi]),
 							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi])
+							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
+							'edge_type': 'EVENT_BATCHES'
 						});
 					}
 
@@ -826,7 +901,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						read_point_edges.push({
 							'_key': md5('read_point_' + sender_id + '_' + event_id + '_' + read_point),
 							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point)
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
+							'edge_type': 'READ_POINT'
 						});
 					}
 
@@ -834,7 +910,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						at_edges.push({
 							'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
 							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location)
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location),
+							'edge_type': 'AT'
 						});
 					}
 
@@ -842,8 +919,190 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 				}
 				else if(event_type == 'AggregationEvent') {
 
+					// eventTime
+					if(findValuesHelper(event, 'eventTime', []).length == 0) {
+						return Error('Missing eventTime element for event!');
+					}
+
+					let event_time = event.eventTime;
+
+					if(typeof event_time != 'string') {
+						return Error('Multiple eventTime elements found!');
+					}
+
+					// eventTimeZoneOffset
+					if(findValuesHelper(event, 'eventTimeZoneOffset', []).length == 0) {
+						return Error('Missing event_time_zone_offset element for event!');
+					}
+
+					let event_time_zone_offset = event.eventTimeZoneOffset;
+
+					if(typeof event_time_zone_offset != 'string') {
+						return Error('Multiple event_time_zone_offset elements found!');
+					}
+
+					let event_id = sender_id+':' + event_time + 'Z' + event_time_zone_offset;
+
+					// baseExtension + eventID
+					if(findValuesHelper(event, 'baseExtension', []).length > 0) {
+						let baseExtension_element = event.baseExtension;
+
+
+						if(findValuesHelper(baseExtension_element , 'eventID', []).length == 0) {
+							return Error('Missing eventID in baseExtension!');
+						}
+
+						event_id = baseExtension_element.eventID;
+					}
+
+					// parentID
+					if(findValuesHelper(event, 'parentID', []).length == 0) {
+						return Error('Missing parentID element for Aggregation event!');
+					}
+
+					let parent_id = event.parentID;
+
+					// childEPCs
+					let child_epcs = [];
+
+					if(findValuesHelper(event, 'childEPCs', []).length == 0) {
+						return Error('Missing childEPCs element for event!');
+					}
+
+					let epcList = event.childEPCs;
+
+					if(findValuesHelper(epcList , 'epc', []).length == 0) {
+						return Error('Missing epc element in epcList for event!');
+					}
+
+					let epc = epcList.epc;
+
+					if(typeof epc == 'string') {
+						child_epcs = [epc];
+					}
+					else {
+						child_epcs = epc;
+					}
+
+					// readPoint
+					let read_point = undefined;
+					if(findValuesHelper(event , 'readPoint', []).length != 0) {
+						let read_point_element = event.readPoint;
+
+						if(findValuesHelper(read_point_element , 'id', []).length == 0) {
+							return Error('Missing id for readPoint!');
+						}
+
+						read_point = read_point_element.id;
+					}
+
+					// bizLocation
+					let biz_location = undefined;
+					if(findValuesHelper(event, 'bizLocation', []).length != 0) {
+						let biz_location_element = event.bizLocation;
+
+						if(findValuesHelper(biz_location_element, 'id', []).length == 0) {
+							return Error('Missing id for bizLocation!');
+						}
+
+						biz_location = biz_location_element.id;
+					}
+
+					let aggregation_event = {
+						identifiers: {
+							eventId: event_id
+						},
+						data: event,
+	                        vertex_type: 'EVENT',
+						_key: md5('event_' + sender_id + '_' + event_id)
+					};
+
+					aggregation_events[event_id] = aggregation_event;
+
+					for(let bi in child_epcs) {
+						child_batches_edges.push({
+							'_key': md5('vhild_batch_' + sender_id + '_' + event_id + '_' + child_epcs[bi]),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + child_epcs[bi]),
+							'edge_type': 'CHILD_BATCH'
+						});
+					}
+
+					if(read_point != undefined) {
+						read_point_edges.push({
+							'_key': md5('read_point_' + sender_id + '_' + event_id + '_' + read_point),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
+							'edge_type': 'READ_POINT'
+
+						});
+					}
+
+					if(biz_location != undefined) {
+						at_edges.push({
+							'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location),
+							'edge_type': 'AT'
+						});
+					}
+
+					parent_batches_edges.push({
+						'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
+						'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+						'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + parent_id),
+						'edge_type': 'PARENT_BATCH'
+					});
+
 				}
-				else if(event_type == 'TransformationEvent') {
+				else if(event_type == 'extension') {
+					let extension_events = event;
+
+					for(var ext_event_type in extension_events)
+					{
+
+						let ext_events = [];
+
+						if(extension_events[ext_event_type].length == undefined) {
+							ext_events = [extension_events[ext_event_type]];
+						}
+						else {
+							ext_events = event_list_element[ext_event_type];
+						}
+
+
+						for(let i in ext_events) {
+
+							let ext_event = ext_events[i];
+
+							if(ext_event_type == 'TransformationEvent') {
+
+								// eventTime
+								if(findValuesHelper(ext_event, 'transformationID', []).length == 0) {
+									return Error('Missing transformationID element for event!');
+								}
+
+								let event_id = ext_event.transformationID;
+
+								console.log(event_id);
+
+								// inputEPCList
+								let input_epcs = [];
+
+								if(findValuesHelper(ext_event, 'inputEPCList', []).length == 0) {
+									return Error('Missing inputEPCList element for event!');
+								}
+
+								let epcList = event.childEPCs;
+
+
+							} else {
+								return Error('Unsupported event type: ' + event_type);
+							}
+						}
+
+					}
+
 
 				}
 				else {
@@ -855,10 +1114,10 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		}
 
 
-		console.log(object_events);
-		console.log(event_batch_edges);
-		console.log(at_edges);
-		console.log(read_point_edges);
+		// console.log(object_events);
+		// console.log(event_batch_edges);
+		// console.log(at_edges);
+		// console.log(read_point_edges);
 
 
 	}
