@@ -467,6 +467,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	var event_batch_edges = [];
 	var parent_batches_edges = [];
 	var child_batches_edges = [];
+	var input_batches_edges = [];
+	var output_batches_edges = [];
 
 	//READING EPCIS Document
 	let doc = findValuesHelper(result, 'epcis:EPCISDocument', []);
@@ -891,8 +893,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					for(let bi in event_batches) {
 						event_batch_edges.push({
 							'_key': md5('event_batch_' + sender_id + '_' + event_id + '_' + event_batches[bi]),
-							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
+							'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
+							'_to': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 							'edge_type': 'EVENT_BATCHES'
 						});
 					}
@@ -1021,7 +1023,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 					for(let bi in child_epcs) {
 						child_batches_edges.push({
-							'_key': md5('vhild_batch_' + sender_id + '_' + event_id + '_' + child_epcs[bi]),
+							'_key': md5('child_batch_' + sender_id + '_' + event_id + '_' + child_epcs[bi]),
 							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + child_epcs[bi]),
 							'edge_type': 'CHILD_BATCH'
@@ -1049,8 +1051,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 					parent_batches_edges.push({
 						'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
-						'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-						'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + parent_id),
+						'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + parent_id),
+						'_to': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 						'edge_type': 'PARENT_BATCH'
 					});
 
@@ -1082,9 +1084,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									return Error('Missing transformationID element for event!');
 								}
 
-								let event_id = ext_event.transformationID;
-
-								console.log(event_id);
+								let ext_event_id = ext_event.transformationID;
 
 								// inputEPCList
 								let input_epcs = [];
@@ -1093,7 +1093,113 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									return Error('Missing inputEPCList element for event!');
 								}
 
-								let epcList = event.childEPCs;
+								let epcList = ext_event.inputEPCList;
+
+								if(findValuesHelper(epcList , 'epc', []).length == 0) {
+									return Error('Missing epc element in epcList for event!');
+								}
+
+								let epc = epcList.epc;
+
+								if(typeof epc == 'string') {
+									input_epcs = [epc];
+								}
+								else {
+									input_epcs = epc;
+								}
+
+								// outputEPCList
+								let output_epcs = [];
+
+								if(findValuesHelper(ext_event, 'outputEPCList', []).length != 0) {
+									let epcList = ext_event.outputEPCList;
+
+									if(findValuesHelper(epcList , 'epc', []).length == 0) {
+										return Error('Missing epc element in epcList for event!');
+									}
+
+									let epc = epcList.epc;
+
+									if(typeof epc == 'string') {
+										output_epcs = [epc];
+									}
+									else {
+										output_epcs = epc;
+									}
+								}
+
+
+								// readPoint
+								let read_point = undefined;
+								if(findValuesHelper(ext_event , 'readPoint', []).length != 0) {
+									let read_point_element = ext_event.readPoint;
+
+									if(findValuesHelper(read_point_element , 'id', []).length == 0) {
+										return Error('Missing id for readPoint!');
+									}
+
+									read_point = read_point_element.id;
+								}
+
+								let transformation_event = {
+									identifiers: {
+										eventId: ext_event_id
+									},
+									data: ext_event,
+									vertex_type: 'EVENT',
+									_key: md5('event_' + sender_id + '_' + ext_event_id)
+								};
+
+								transformation_events[ext_event_id] = transformation_event;
+
+								// bizLocation
+								let biz_location = undefined;
+								if(findValuesHelper(ext_event, 'bizLocation', []).length != 0) {
+									let biz_location_element = ext_event.bizLocation;
+
+									if(findValuesHelper(biz_location_element, 'id', []).length == 0) {
+										return Error('Missing id for bizLocation!');
+									}
+
+									biz_location = biz_location_element.id;
+								}
+
+								for(let bi in input_epcs) {
+									input_batches_edges.push({
+										'_key': md5('child_batch_' + sender_id + '_' + ext_event_id + '_' + input_epcs[bi]),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + input_epcs[bi]),
+										'edge_type': 'INPUT_BATCH'
+									});
+								}
+
+								for(let bi in output_epcs) {
+									output_batches_edges.push({
+										'_key': md5('child_batch_' + sender_id + '_' + ext_event_id + '_' + output_epcs[bi]),
+										'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + output_epcs[bi]),
+										'_to': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'edge_type': 'OUTPUT_BATCH'
+									});
+								}
+
+								if(read_point != undefined) {
+									read_point_edges.push({
+										'_key': md5('read_point_' + sender_id + '_' + ext_event_id + '_' + read_point),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
+										'edge_type': 'READ_POINT'
+
+									});
+								}
+
+								if(biz_location != undefined) {
+									at_edges.push({
+										'_key': md5('at_' + sender_id + '_' + ext_event_id + '_' + biz_location),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location),
+										'edge_type': 'AT'
+									});
+								}
 
 
 							} else {
@@ -1114,7 +1220,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		}
 
 
-		// console.log(object_events);
+		 console.log(transformation_events);
 		// console.log(event_batch_edges);
 		// console.log(at_edges);
 		// console.log(read_point_edges);
