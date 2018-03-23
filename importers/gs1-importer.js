@@ -649,108 +649,46 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	for (let i in Vocabulary_elements) {
 		vocabulary_element = Vocabulary_elements[i];
-
-		if (!(vocabulary_element instanceof Array)) {
-			let temp_vocabularyel_elements = vocabulary_element;
-			vocabulary_element = [];
-			vocabulary_element.push(temp_vocabularyel_elements);
-		}
+		// console.log(vocabulary_element)
+		// if (!(vocabulary_element instanceof Array)) {
+		// 	let temp_vocabularyel_elements = vocabulary_element;
+		// 	vocabulary_element = [];
+		// 	vocabulary_element.push(temp_vocabularyel_elements);
+		// }
 
 		for (let j in vocabulary_element){
 			inside = vocabulary_element[j];
 			let pro;
+			console.log(inside);
 
 
 			for (j in inside) {
 				pro = inside[j];
-
+				var v_type;
 				let typ = findValuesHelper(pro, 'type', []);
 				if (typ.length <= 0) {
 					return Error('Missing type element for element!');
 				} else {
-					let v_type;
 					v_type = pro.type;
-
-					//////////BUSINESS_LOCATION/////////////
-					if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
-						Bussines_location_elements = pro;
-
-						let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
-						if (voc_el_list.length == 0) {
-							return Error('Missing VocabularyElementList element for element!');
-						} else {
-							VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
-						}
-
-
-						for (let k in VocabularyElementList_element)
-						{
-
-							let VocabularyElement_element;
-							VocabularyElement_element = VocabularyElementList_element[k];
-							/*
-                            let voc_el_list = findValuesHelper(one_location, 'VocabularyElement', []);
-                            if (voc_el_list.length <= 0) {
-                                return Error('Missing VocabularyElement element for VocabularyList element!');
-                            } else {
-                                VocabularyElement_element = one_location.VocabularyElement;
-
-                            }
-*/
-							for (let x in VocabularyElement_element) {
-								let v;
-								v  = VocabularyElement_element[x];
-
-								let loc_id = findValuesHelper(v, 'id', []);
-								if (loc_id.length <= 0) {
-									return Error('Missing id element for VocabularyElement element!');
-								} else {
-									let str = v.id;
-
-
-									business_location_id = str.replace('urn:epc:id:sgln:', '');
-
-								}
-
-								let attr = findValuesHelper(v, 'attribute', []);
-								if (attr.length <= 0) {
-									return Error('Missing attribute element for VocabularyElement element!');
-								} else {
-									let attribute;
-									attribute = v.attribute;
-
-
-
-									for (let y in attribute) {
-										let kk;
-										kk = attribute[y];
-
-
-										let att_id =  findValuesHelper(kk, 'id', []);
-										if (att_id.length <= 0) {
-											return Error('Missing id attribute for element!');
-										} else {
-											let str = kk.id;
-											attribute_id = str.replace('urn:ts:location:', '');
-										}
-
-										data_object[attribute_id] = kk['_'];
-
-									}
-								}
-
-
-
-								locations[business_location_id] = {};
-								locations[business_location_id]['identifiers'] = {};
-								locations[business_location_id]['identifiers']['bussines_location_id'] = business_location_id;
-								locations[business_location_id]['data'] = data_object;
-								//						console.log(locations);
-							}
-
-						}
-					}
 				}
+				// //////////BUSINESS_LOCATION/////////////
+				// if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
+				// 	Bussines_location_elements = pro;
+                //
+				// 	let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
+				// 	if (voc_el_list.length == 0) {
+				// 		return Error('Missing VocabularyElementList element for element!');
+				// 	} else {
+				// 		VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
+                //
+				// 	}
+
+					// console.log(Bussines_location_elements)
+
+					// console.log(locations);
+				}
+
+
 			}
 
 
@@ -762,6 +700,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 
 	}
+
 
 	//READING EPCIS Document Body
 
@@ -891,7 +830,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					for(let bi in event_batches) {
 						event_batch_edges.push({
 							'_key': md5('event_batch_' + sender_id + '_' + event_id + '_' + event_batches[bi]),
-							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_from': 'ot_vertices/' + md5('event_' + sender_id + '_' + event_id),
 							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
 							'edge_type': 'EVENT_BATCHES'
 						});
@@ -900,7 +839,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					if(read_point != undefined) {
 						read_point_edges.push({
 							'_key': md5('read_point_' + sender_id + '_' + event_id + '_' + read_point),
-							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
+							'_from': 'ot_vertices/' + md5('event_' + sender_id + '_' + event_id),
 							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
 							'edge_type': 'READ_POINT'
 						});
