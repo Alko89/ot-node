@@ -427,30 +427,17 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let Vocabulary_elements;
 	let vocabulary_element;
 	let inside;
-	let type_element;
 	var Bussines_location_elements;
-	let test;
-	let BusinessLocation_element;
-	let sanitized_BusinessLocation_element;
 	let VocabularyElementList_element;
-	let VocabularyElement_element;
 	let business_location_id;
-	let sanitized_VocabularyElement_element;
 	let attribute_id;
+
+
+
 	let data_object = {};
 	let participants_data = {};
 	let object_data = {};
 	let batch_data = {};
-
-	///attributes - BusinessLocation
-	let partner_id;
-	let name;
-	let street1;
-	let city;
-	let stateOrRegion;
-	let postalCode;
-	let country;
-
 
 
 
@@ -506,7 +493,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	}
 
-
 	////SENDER
 	let send = findValuesHelper(StandardBusinessDocumentHeader_element, 'Sender', []);
 	if (send.length <= 0) {
@@ -531,9 +517,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		sender_id = sender_id_element['_'];
 	}
 
-
-
-
 	let contact_info = findValuesHelper(Sender_element, 'ContactInformation', []);
 	if (contact_info.length <= 0) {
 		return Error('Missing ContactInformation element for Sender element!');
@@ -553,8 +536,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	}
 
-
-
 	let receive_id = findValuesHelper(Receiver_element, 'Identifier', []);
 	if (receive_id.length <= 0) {
 		return Error('Missing Identifier element for Receiver element!');
@@ -563,8 +544,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	}
 
-
-
 	let receiveid = findValuesHelper(receiver_id_element, '_', []);
 	if (receiveid.length <= 0) {
 		return Error('Missing Identifier element for Receiver element!');
@@ -572,7 +551,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		receiver_id = receiver_id_element['_'];
 
 	}
-
 
 
 	let contact_info_rec = findValuesHelper(Receiver_element, 'ContactInformation', []);
@@ -614,13 +592,13 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	receiver['receiver_id']['data'] = ContactInformation_element_receiver;
 	receiver['receiver_id']['vertex_type'] = 'RECEIVER';
 
+	///BUSINESS SCOPE AND DOCUMENT IDENTIFICATION
+	
 	document_meta = Object.assign({}, document_meta, {BusinessScope_element, DocumentIdentification_element});
 
 
 
-
-
-	//READING Master Data
+	/////////////READING Master Data///////////
 
 	let ext = findValuesHelper(EPCISHeader_element, 'extension', []);
 	if (ext.length <= 0) {
@@ -670,7 +648,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 			inside = vocabulary_element[j];
 			let pro;
 
-
 			for (j in inside) {
 				pro = inside[j];
 
@@ -710,10 +687,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									return Error('Missing id element for VocabularyElement element!');
 								} else {
 									let str = v.id;
-
-
 									business_location_id = str.replace('urn:epc:id:sgln:', '');
-
 								}
 
 								let attr = findValuesHelper(v, 'attribute', []);
@@ -722,8 +696,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 								} else {
 									let attribute;
 									attribute = v.attribute;
-
-
 
 									for (let y in attribute) {
 										let kk;
@@ -743,8 +715,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									}
 								}
 								var children_elements;
-								var children_id_elements;
-								var child_location_id;
 								let children_check = findValuesHelper(v, 'children', []);
 								if (children_check.length == 0) {
 									return Error('Missing children element for element!');
@@ -791,9 +761,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 								locations[business_location_id]['identifiers'] = {};
 								locations[business_location_id]['identifiers']['bussines_location_id'] = business_location_id;
 								locations[business_location_id]['data'] = data_object;
-								// console.log(locations);
 							}
-
 						}
 					}
 
@@ -805,7 +773,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					///////PARTICIPANT///////////
 					if(v_type == 'urn:ot:mda:participant'){
 						Participant_elements = pro;
-						// console.log(Participant_elements);
 
 						let extension_check = findValuesHelper(Participant_elements, 'extension', []);
 						if (extension_check.length == 0) {
@@ -813,7 +780,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						} else {
 							exten_element = Participant_elements.extension;
 						}
-						// console.log(exten_element)
 
 						let ot_voc_check = findValuesHelper(exten_element, 'OTVocabularyElement', []);
 						if (ot_voc_check.length == 0) {
@@ -838,7 +804,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 						for(let zx in attribute_elements) {
                         	let attribute_el = attribute_elements[zx];
-                        	// console.log(attribute_el);
 
                         	var value;
 							let value_check = findValuesHelper(attribute_el, '_', []);
@@ -863,9 +828,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 							participants[participant_id]['identifiers'] = {};
 							participants[participant_id]['identifiers']['participant_id'] = participant_id;
 							participants[participant_id]['data'] = data_object;
-
 						}
-
 					}
 
 
@@ -881,7 +844,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 						} else {
 							extensio_element = Object_elements.extension;
 						}
-
 
 						var OTVocabularyEl;
 						let OTVocabularyEl_check = findValuesHelper(extensio_element, 'OTVocabularyElement', []);
@@ -937,11 +899,6 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 							objects[object_id]['identifiers']['object_id'] = object_id;
 							objects[object_id]['data'] = sanitized_object_data;
 						}
-
-
-
-
-
 					}
 
 					var Batch_elements;
@@ -1011,28 +968,17 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 								let new_obj = {};
 								sanitized_batch_data = sanitize(batch_data, new_obj, ['urn:', 'ot:', 'mda:', 'batch:']);
 
+
 								batches[batch_id] = {};
 								batches[batch_id]['identifiers'] = {};
 								batches[batch_id]['identifiers']['batch_id'] = batch_id;
 								batches[batch_id]['data'] = sanitized_batch_data;
-
-
-
-
 							}
 						}
 					}
-
-					console.log(receiver);
-
-
 				}
 			}
-
 		}
-
-
-
 	}
 
 	//READING EPCIS Document Body
