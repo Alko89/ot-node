@@ -438,6 +438,9 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	let sanitized_VocabularyElement_element;
 	let attribute_id;
 	let data_object = {};
+	let participants_data = {};
+	let object_data = {};
+	let batch_data = {};
 
 	///attributes - BusinessLocation
 	let partner_id;
@@ -452,10 +455,14 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 
 
-	let sender = {};
-	let receiver = {};
-	let document_meta = {};
-	let locations = {};
+	var sender = {};
+	var receiver = {};
+	var document_meta = {};
+	var locations = {};
+	var participants = {};
+	var objects = {};
+	var batches = {};
+
 
 	let object_events = {};
 	let aggregation_events = {};
@@ -467,6 +474,9 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 	var event_batch_edges = [];
 	var parent_batches_edges = [];
 	var child_batches_edges = [];
+	var input_batches_edges = [];
+	var output_batches_edges = [];
+	var business_location_edges = [];
 
 	//READING EPCIS Document
 	let doc = findValuesHelper(result, 'epcis:EPCISDocument', []);
@@ -649,58 +659,381 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 	for (let i in Vocabulary_elements) {
 		vocabulary_element = Vocabulary_elements[i];
-		// console.log(vocabulary_element)
-		// if (!(vocabulary_element instanceof Array)) {
-		// 	let temp_vocabularyel_elements = vocabulary_element;
-		// 	vocabulary_element = [];
-		// 	vocabulary_element.push(temp_vocabularyel_elements);
-		// }
+
+		if (!(vocabulary_element instanceof Array)) {
+			let temp_vocabularyel_elements = vocabulary_element;
+			vocabulary_element = [];
+			vocabulary_element.push(temp_vocabularyel_elements);
+		}
 
 		for (let j in vocabulary_element){
 			inside = vocabulary_element[j];
 			let pro;
-			console.log(inside);
 
 
 			for (j in inside) {
 				pro = inside[j];
-				var v_type;
+
 				let typ = findValuesHelper(pro, 'type', []);
 				if (typ.length <= 0) {
 					return Error('Missing type element for element!');
 				} else {
+					let v_type;
 					v_type = pro.type;
+
+					//////////BUSINESS_LOCATION/////////////
+					if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
+						Bussines_location_elements = pro;
+
+						let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
+						if (voc_el_list.length == 0) {
+							return Error('Missing VocabularyElementList element for element!');
+						} else {
+							VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
+						}
+
+
+						for (let k in VocabularyElementList_element)
+						{
+
+							let VocabularyElement_element;
+							VocabularyElement_element = VocabularyElementList_element[k];
+							// console.log(VocabularyElement_element)
+
+							for (let x in VocabularyElement_element) {
+								let v;
+								v  = VocabularyElement_element[x];
+								// console.log(v)
+
+								let loc_id = findValuesHelper(v, 'id', []);
+								if (loc_id.length <= 0) {
+									return Error('Missing id element for VocabularyElement element!');
+								} else {
+									let str = v.id;
+
+
+									business_location_id = str.replace('urn:epc:id:sgln:', '');
+
+								}
+
+								let attr = findValuesHelper(v, 'attribute', []);
+								if (attr.length <= 0) {
+									return Error('Missing attribute element for VocabularyElement element!');
+								} else {
+									let attribute;
+									attribute = v.attribute;
+
+
+
+									for (let y in attribute) {
+										let kk;
+										kk = attribute[y];
+
+
+										let att_id =  findValuesHelper(kk, 'id', []);
+										if (att_id.length <= 0) {
+											return Error('Missing id attribute for element!');
+										} else {
+											let str = kk.id;
+											attribute_id = str.replace('urn:ts:location:', '');
+										}
+
+										data_object[attribute_id] = kk['_'];
+
+									}
+								}
+								var children_elements;
+								var children_id_elements;
+								var child_location_id;
+								let children_check = findValuesHelper(v, 'children', []);
+								if (children_check.length == 0) {
+									return Error('Missing children element for element!');
+								} else {
+									children_elements = v.children;
+								}
+
+								if(findValuesHelper(children_elements , 'id', []).length == 0) {
+									return Error('Missing id element in children element for business location!');
+								}
+
+								let children_id = children_elements.id;
+								var child_id_obj;
+								var child_location_id;
+								for (let mn in children_id){
+									child_id_obj = (children_id[mn]);
+
+									if (!(child_id_obj instanceof Array)) {
+										let temp_child_id = child_id_obj;
+										child_id_obj = [];
+										child_id_obj.push(temp_child_id);
+									}
+
+									for(let r in child_id_obj) {
+										child_location_id = child_id_obj[r];
+
+										business_location_edges.push({
+											'_key': md5('child_business_location_' + sender_id + '_' + child_location_id + '_' + business_location_id),
+											'_from': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + child_location_id),
+											'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + business_location_id),
+											'edge_type': 'CHILD_BUSINESS_LOCATION'
+										});
+
+										locations[child_location_id] = {};
+										locations[child_location_id]['identifiers'] = {};
+										locations[child_location_id]['identifiers']['bussines_location_id'] = child_location_id;
+
+
+									}
+								}
+
+
+								locations[business_location_id] = {};
+								locations[business_location_id]['identifiers'] = {};
+								locations[business_location_id]['identifiers']['bussines_location_id'] = business_location_id;
+								locations[business_location_id]['data'] = data_object;
+								// console.log(locations);
+							}
+
+						}
+					}
+
+					var Participant_elements;
+					var exten_element;
+					var OTVocabularyElement_element;
+					var participant_id;
+					var attribute_elements;
+					///////PARTICIPANT///////////
+					if(v_type == 'urn:ot:mda:participant'){
+						Participant_elements = pro;
+						// console.log(Participant_elements);
+
+						let extension_check = findValuesHelper(Participant_elements, 'extension', []);
+						if (extension_check.length == 0) {
+							return Error('Missing extension element for Participant element!');
+						} else {
+							exten_element = Participant_elements.extension;
+						}
+						// console.log(exten_element)
+
+						let ot_voc_check = findValuesHelper(exten_element, 'OTVocabularyElement', []);
+						if (ot_voc_check.length == 0) {
+							return Error('Missing OTVocabularyElement for extension element!');
+						} else {
+							OTVocabularyElement_element = exten_element.OTVocabularyElement;
+						}
+
+						let participant_id_check = findValuesHelper(OTVocabularyElement_element, 'id', []);
+						if (participant_id_check.length == 0) {
+							return Error('Missing id for Participant element!');
+						} else {
+							participant_id = OTVocabularyElement_element.id;
+						}
+
+						let attribute_check = findValuesHelper(OTVocabularyElement_element, 'attribute', []);
+						if (attribute_check.length == 0) {
+							return Error('Missing attribute for Participant element!');
+						} else {
+							attribute_elements = OTVocabularyElement_element.attribute;
+						}
+
+						for(let zx in attribute_elements) {
+                        	let attribute_el = attribute_elements[zx];
+                        	// console.log(attribute_el);
+
+                        	var value;
+							let value_check = findValuesHelper(attribute_el, '_', []);
+							if (value_check.length == 0) {
+								return Error('Missing value for attribute element!');
+							} else {
+								value = attribute_el['_'];
+							}
+
+							var attr_id;
+							let attr_id_check = findValuesHelper(attribute_el, 'id', []);
+							if (attr_id_check.length == 0) {
+								return Error('Missing id element for attribute element!');
+							} else {
+								attr_id = attribute_el.id;
+							}
+
+
+							participants_data[attr_id] = value;
+
+							participants[participant_id] = {};
+							participants[participant_id]['identifiers'] = {};
+							participants[participant_id]['identifiers']['participant_id'] = participant_id;
+							participants[participant_id]['data'] = data_object;
+
+						}
+
+					}
+
+
+					var Object_elements;
+					//////OBJECT////////
+					if(v_type == 'urn:ot:mda:object'){
+						Object_elements = pro;
+
+						var extensio_element;
+						let extensio_check = findValuesHelper(Object_elements, 'extension', []);
+						if (extensio_check.length == 0) {
+							return Error('Missing extension element for Object element!');
+						} else {
+							extensio_element = Object_elements.extension;
+						}
+
+
+						var OTVocabularyEl;
+						let OTVocabularyEl_check = findValuesHelper(extensio_element, 'OTVocabularyElement', []);
+						if (OTVocabularyEl_check.length == 0) {
+							return Error('Missing OTVocabularyElement element for extension element!');
+						} else {
+							OTVocabularyEl = extensio_element.OTVocabularyElement;
+						}
+
+						var object_id;
+						let object_id_check = findValuesHelper(OTVocabularyEl, 'id', []);
+						if (object_id_check.length == 0) {
+							return Error('Missing id element for OTVocabularyElement!');
+						} else {
+							object_id = OTVocabularyEl.id;
+						}
+
+						var object_attribute_elements;
+						let attribute_el_check = findValuesHelper(OTVocabularyEl, 'attribute', []);
+						if (attribute_el_check.length == 0) {
+							return Error('Missing attribute element for OTVocabularyElement!');
+						} else {
+							object_attribute_elements = OTVocabularyEl.attribute;
+						}
+
+						for(let rr in object_attribute_elements){
+							var single_attribute;
+							single_attribute = object_attribute_elements[rr];
+
+							var single_attribute_id;
+							let single_attribute_id_check = findValuesHelper(single_attribute, 'id', []);
+							if (single_attribute_id_check.length == 0) {
+								return Error('Missing id element for attribute element!');
+							} else {
+								single_attribute_id = single_attribute.id;
+							}
+
+							var single_attribute_value;
+							let single_attribute_value_check = findValuesHelper(single_attribute, '_', []);
+							if (single_attribute_value_check.length == 0) {
+								return Error('Missing value element for attribute element!');
+							} else {
+								single_attribute_value = single_attribute['_'];
+							}
+
+							object_data[single_attribute_id] = single_attribute_value;
+							let new_obj = {};
+							sanitized_object_data = sanitize(object_data, new_obj, ['urn:', 'ot:', 'mda:', 'object:']);
+
+
+							objects[object_id] = {};
+							objects[object_id]['identifiers'] = {};
+							objects[object_id]['identifiers']['object_id'] = object_id;
+							objects[object_id]['data'] = sanitized_object_data;
+						}
+
+
+
+
+
+					}
+
+					var Batch_elements;
+					////////BATCH/////////
+					if(v_type == 'urn:ot:mda:batch') {
+						Batch_elements = pro;
+
+						var batch_extension;
+						let batch_extension_check = findValuesHelper(Batch_elements, 'extension', []);
+						if (batch_extension_check.length == 0) {
+							return Error('Missing extension element for Batch element!');
+						} else {
+							batch_extension = Batch_elements.extension;
+						}
+
+						var OTVoc_El_elements;
+						let OTVoc_El_elements_check = findValuesHelper(batch_extension, 'OTVocabularyElement', []);
+						if (OTVoc_El_elements_check.length == 0) {
+							return Error('Missing OTVocabularyElement element for extension element!');
+						} else {
+							OTVoc_El_elements = batch_extension.OTVocabularyElement;
+						}
+
+						var ot_vocabulary_element;
+						for(let g in OTVoc_El_elements)
+						{
+							ot_vocabulary_element = OTVoc_El_elements[g];
+
+							var batch_id;
+							let batch_id_element_check = findValuesHelper(ot_vocabulary_element, 'id',[]);
+							if (batch_id_element_check.length == 0) {
+								return Error('Missing id element for OTVocabularyElement!');
+							} else {
+								batch_id = ot_vocabulary_element.id;
+							}
+
+							var batch_attribute_el;
+							let batch_attribute_el_check = findValuesHelper(ot_vocabulary_element, 'attribute',[]);
+							if (batch_attribute_el_check.length == 0) {
+								return Error('Missing attribute element for OTVocabularyElement!');
+							} else {
+								batch_attribute_el = ot_vocabulary_element.attribute;
+							}
+
+							var single;
+							for(let one in batch_attribute_el) {
+                            	single = batch_attribute_el[one];
+
+                            	var batch_attribute_id;
+                            	let batch_attribute_id_check = findValuesHelper(single, 'id',[]);
+								if (batch_attribute_id_check.length == 0) {
+									return Error('Missing id element for attribute element!');
+								} else {
+									batch_attribute_id = single.id;
+								}
+
+								var batch_attribute_value;
+								let batch_attribute_value_check = findValuesHelper(single, '_',[]);
+								if (batch_attribute_value_check.length == 0) {
+									return Error('Missing value element for attribute element!');
+								} else {
+									batch_attribute_value = single['_'];
+								}
+
+								batch_data[batch_attribute_id] = batch_attribute_value;
+
+								let new_obj = {};
+								sanitized_batch_data = sanitize(batch_data, new_obj, ['urn:', 'ot:', 'mda:', 'batch:']);
+
+								batches[batch_id] = {};
+								batches[batch_id]['identifiers'] = {};
+								batches[batch_id]['identifiers']['batch_id'] = batch_id;
+								batches[batch_id]['data'] = sanitized_batch_data;
+
+
+
+
+							}
+						}
+					}
+
+					console.log(receiver);
+
+
 				}
-				// //////////BUSINESS_LOCATION/////////////
-				// if(v_type == 'urn:epcglobal:epcis:vtype:BusinessLocation') {
-				// 	Bussines_location_elements = pro;
-                //
-				// 	let voc_el_list = findValuesHelper(Bussines_location_elements, 'VocabularyElementList', []);
-				// 	if (voc_el_list.length == 0) {
-				// 		return Error('Missing VocabularyElementList element for element!');
-				// 	} else {
-				// 		VocabularyElementList_element = Bussines_location_elements.VocabularyElementList;
-                //
-				// 	}
-
-					// console.log(Bussines_location_elements)
-
-					// console.log(locations);
-				}
-
-
 			}
-
-
-
-
-
 
 		}
 
 
-	}
 
+	}
 
 	//READING EPCIS Document Body
 
@@ -830,8 +1163,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					for(let bi in event_batches) {
 						event_batch_edges.push({
 							'_key': md5('event_batch_' + sender_id + '_' + event_id + '_' + event_batches[bi]),
-							'_from': 'ot_vertices/' + md5('event_' + sender_id + '_' + event_id),
-							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
+							'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + event_batches[bi]),
+							'_to': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 							'edge_type': 'EVENT_BATCHES'
 						});
 					}
@@ -839,7 +1172,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					if(read_point != undefined) {
 						read_point_edges.push({
 							'_key': md5('read_point_' + sender_id + '_' + event_id + '_' + read_point),
-							'_from': 'ot_vertices/' + md5('event_' + sender_id + '_' + event_id),
+							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 							'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
 							'edge_type': 'READ_POINT'
 						});
@@ -915,7 +1248,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 					}
 
 					let epc = epcList.epc;
-
+					// console.log(epc);
 					if(typeof epc == 'string') {
 						child_epcs = [epc];
 					}
@@ -960,7 +1293,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 					for(let bi in child_epcs) {
 						child_batches_edges.push({
-							'_key': md5('vhild_batch_' + sender_id + '_' + event_id + '_' + child_epcs[bi]),
+							'_key': md5('child_batch_' + sender_id + '_' + event_id + '_' + child_epcs[bi]),
 							'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 							'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + child_epcs[bi]),
 							'edge_type': 'CHILD_BATCH'
@@ -988,8 +1321,8 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 
 					parent_batches_edges.push({
 						'_key': md5('at_' + sender_id + '_' + event_id + '_' + biz_location),
-						'_from': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
-						'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + parent_id),
+						'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + parent_id),
+						'_to': 'ot_vertices/' + md5('event_' + sender + '_' + event_id),
 						'edge_type': 'PARENT_BATCH'
 					});
 
@@ -1021,9 +1354,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									return Error('Missing transformationID element for event!');
 								}
 
-								let event_id = ext_event.transformationID;
-
-								console.log(event_id);
+								let ext_event_id = ext_event.transformationID;
 
 								// inputEPCList
 								let input_epcs = [];
@@ -1032,7 +1363,113 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 									return Error('Missing inputEPCList element for event!');
 								}
 
-								let epcList = event.childEPCs;
+								let epcList = ext_event.inputEPCList;
+
+								if(findValuesHelper(epcList , 'epc', []).length == 0) {
+									return Error('Missing epc element in epcList for event!');
+								}
+
+								let epc = epcList.epc;
+
+								if(typeof epc == 'string') {
+									input_epcs = [epc];
+								}
+								else {
+									input_epcs = epc;
+								}
+
+								// outputEPCList
+								let output_epcs = [];
+
+								if(findValuesHelper(ext_event, 'outputEPCList', []).length != 0) {
+									let epcList = ext_event.outputEPCList;
+
+									if(findValuesHelper(epcList , 'epc', []).length == 0) {
+										return Error('Missing epc element in epcList for event!');
+									}
+
+									let epc = epcList.epc;
+
+									if(typeof epc == 'string') {
+										output_epcs = [epc];
+									}
+									else {
+										output_epcs = epc;
+									}
+								}
+
+
+								// readPoint
+								let read_point = undefined;
+								if(findValuesHelper(ext_event , 'readPoint', []).length != 0) {
+									let read_point_element = ext_event.readPoint;
+
+									if(findValuesHelper(read_point_element , 'id', []).length == 0) {
+										return Error('Missing id for readPoint!');
+									}
+
+									read_point = read_point_element.id;
+								}
+
+								let transformation_event = {
+									identifiers: {
+										eventId: ext_event_id
+									},
+									data: ext_event,
+									vertex_type: 'EVENT',
+									_key: md5('event_' + sender_id + '_' + ext_event_id)
+								};
+
+								transformation_events[ext_event_id] = transformation_event;
+
+								// bizLocation
+								let biz_location = undefined;
+								if(findValuesHelper(ext_event, 'bizLocation', []).length != 0) {
+									let biz_location_element = ext_event.bizLocation;
+
+									if(findValuesHelper(biz_location_element, 'id', []).length == 0) {
+										return Error('Missing id for bizLocation!');
+									}
+
+									biz_location = biz_location_element.id;
+								}
+
+								for(let bi in input_epcs) {
+									input_batches_edges.push({
+										'_key': md5('child_batch_' + sender_id + '_' + ext_event_id + '_' + input_epcs[bi]),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('batch_' + sender_id + '_' + input_epcs[bi]),
+										'edge_type': 'INPUT_BATCH'
+									});
+								}
+
+								for(let bi in output_epcs) {
+									output_batches_edges.push({
+										'_key': md5('child_batch_' + sender_id + '_' + ext_event_id + '_' + output_epcs[bi]),
+										'_from': 'ot_vertices/' + md5('batch_' + sender_id + '_' + output_epcs[bi]),
+										'_to': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'edge_type': 'OUTPUT_BATCH'
+									});
+								}
+
+								if(read_point != undefined) {
+									read_point_edges.push({
+										'_key': md5('read_point_' + sender_id + '_' + ext_event_id + '_' + read_point),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + read_point),
+										'edge_type': 'READ_POINT'
+
+									});
+								}
+
+								if(biz_location != undefined) {
+									at_edges.push({
+										'_key': md5('at_' + sender_id + '_' + ext_event_id + '_' + biz_location),
+										'_from': 'ot_vertices/' + md5('event_' + sender + '_' + ext_event_id),
+										'_to': 'ot_vertices/' + md5('business_location_' + sender_id + '_' + biz_location),
+										'edge_type': 'AT'
+									});
+								}
 
 
 							} else {
@@ -1053,7 +1490,7 @@ parseString(gs1_xml, {explicitArray: false, mergeAttrs: true} , async function (
 		}
 
 
-		// console.log(object_events);
+		 // console.log(transformation_events);
 		// console.log(event_batch_edges);
 		// console.log(at_edges);
 		// console.log(read_point_edges);
