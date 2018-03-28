@@ -1,6 +1,7 @@
 language: node_js
 node_js:
   - "9"
+sudo: enabled
 services:
   - mongodb
 before_install:
@@ -11,6 +12,8 @@ before_install:
 - ./setup_arangodb.sh
 - rm -rf ArangoDB-3.2.2.tar.gz
 - cd ArangoDB-3.2.2 && touch .eslintignore && find . -name '*.js' >> .eslintignore && cd ..
+- npm install -g truffle
+- npm install -g ganache-cli
 script:
   - npm run lint
   - npm test
@@ -19,6 +22,12 @@ script:
   - jobs
   - kill %1
   - node isStartHealthy.js
+  - ganache-cli &>geneche.log &
+  - cd modules/blockchain_interface/ethereum && rm -rf build && truffle migrate --reset --compile-all
+  - cd ../../../..
+  - jobs
+  - kill %1
 after_script:
 - kill -9 $(pgrep arangod)
 - rm -f start.log
+- rm -f ganache.log
