@@ -22,7 +22,7 @@ script:
   - jobs
   - kill %1
   - node isStartHealthy.js
-  - ganache-cli &>geneche.log &
+  - ganache-cli &>ganache.log &
   - cd modules/blockchain_interface/ethereum && rm -rf build && truffle migrate --reset --compile-all
   - cd ../../../..
   - jobs
