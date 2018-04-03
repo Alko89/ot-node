@@ -67,6 +67,7 @@
   },
   "scripts": {
     "test": "nyc mocha --recursive test",
+    "debug": "concurrently -n IPC,RPC -c magenta,yellow \"node --nolazy --inspect=9229 ipc\" \"node --nolazy --inspect=9228 rpc\" --kill-others --prefix \"{name}\"",
     "start": "concurrently -n IPC,RPC -c magenta,yellow \"node ipc\" \"node rpc\" --kill-others --prefix \"{name}\"",
     "lint": "./node_modules/.bin/eslint --quiet modules test ipc.js rpc.js update.js gulpfile.js isStartHealthy.js"
   },

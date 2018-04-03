@@ -1,0 +1,3 @@
+{
+    "python.pythonPath": "${workspaceFolder}/ot-node-virtualenv/bin/python"
+}
