@@ -119,19 +119,19 @@ def joinTransactions(transaction):
     if transaction['data']['TransactionFlow'] == 'Input':
         aql = "FOR e IN ot_vertices FILTER e.vertex_type == 'TRANSACTION' and e.data.TransactionFlow == 'Output' and e.id.transaction_id == '" + transaction_id + "' and e._key != '"+ key +"' RETURN e._key"
     
-        result = db.aql.execute(aql);
+        result = db.aql.execute(aql)
     
         for res_key in result:
-            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Output', '_from': key, '_to' : res_key})
-            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(res_key + "-" + key), 'TransactionFlow': 'Input', '_from': res_key, '_to' : key})
+            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Output', '_from': key, '_to' : res_key}, data_provider_id)
+            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(res_key + "-" + key), 'TransactionFlow': 'Input', '_from': res_key, '_to' : key}, data_provider_id)
     else:    
         aql = "FOR e IN ot_vertices FILTER e.vertex_type == 'TRANSACTION' and e.data.TransactionFlow == 'Input' and e.id.transaction_id == '" + transaction_id + "' and e._key != '"+ key +"' RETURN e._key"
     
-        result = db.aql.execute(aql);
+        result = db.aql.execute(aql)
     
         for res_key in result:
-            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Input', '_from': key, '_to' : res_key})
-            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(res_key + "-" + key), 'TransactionFlow': 'Output', '_from': res_key, '_to' : key})
+            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Input', '_from': key, '_to' : res_key}, data_provider_id)
+            insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(res_key + "-" + key), 'TransactionFlow': 'Output', '_from': res_key, '_to' : key}, data_provider_id)
 # Collaboration check
 
 def isCollaborationConfirmed(providerId, partnerId):
@@ -141,7 +141,7 @@ def isCollaborationConfirmed(providerId, partnerId):
 
 def hasVertex(vertex_key):
     nodesCollection = db.collection('ot_vertices')
-    return nodesCollection.has(vertex_key);
+    return nodesCollection.has(vertex_key)
 
 # Loading XML from input file supplied in command line argument
 xml_file_url = sys.argv[1]
@@ -251,7 +251,7 @@ if 'MasterData' in OriginTrailExport_element:
         for business_location_element in BusinessLocation_elements:
             
             if 'BusinessLocationOwnerId' not in business_location_element:
-                error('Missing BusinessLocationOwnerId for BusinessLocation!');
+                error('Missing BusinessLocationOwnerId for BusinessLocation!')
             
             business_location_owner_id = business_location_element['BusinessLocationOwnerId']
             
@@ -438,7 +438,7 @@ if 'TransactionData' in OriginTrailExport_element:
                     BATCHES[batch_uid]['_key'] = hashed('batch_' + batch_uid)
                     BATCHES[batch_uid]['vertex_key'] = hashed('batch_' + batch_uid)
                     
-                    INPUT_BATCHES.append(hashed('batch_' + batch_uid));
+                    INPUT_BATCHES.append(hashed('batch_' + batch_uid))
                     
                     INSTANCE_OF.append({
                             '_from': BATCHES[batch_uid]['vertex_key'],
@@ -504,7 +504,7 @@ if 'TransactionData' in OriginTrailExport_element:
                 BATCHES[batch_uid]['_key'] = hashed('batch_' + batch_uid)
                 BATCHES[batch_uid]['vertex_key'] = hashed('batch_' + batch_uid)
                 
-                OUTPUT_BATCHES.append(hashed('batch_' + batch_uid));
+                OUTPUT_BATCHES.append(hashed('batch_' + batch_uid))
                 
                 INSTANCE_OF.append({
                         '_from': BATCHES[batch_uid]['vertex_key'],
@@ -653,7 +653,7 @@ if 'TransactionData' in OriginTrailExport_element:
                 BATCHES[batch_uid]['_key'] = hashed('batch_' + batch_uid)
                 BATCHES[batch_uid]['vertex_key'] = hashed('batch_' + batch_uid)
                 
-                TRANSFERED_BATCHES.append(hashed('batch_' + batch_uid));
+                TRANSFERED_BATCHES.append(hashed('batch_' + batch_uid))
                 
                 INSTANCE_OF.append({
                         '_from': BATCHES[batch_uid]['vertex_key'],

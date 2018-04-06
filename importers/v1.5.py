@@ -141,7 +141,7 @@ def joinTransactions(transaction, data_provider_id):
     if transaction['data']['TransactionFlow'] == 'Input':
         aql = "FOR e IN ot_vertices FILTER e.vertex_type == 'TRANSACTION' and e.transaction_flow == 'Output' and e.identifiers.TransactionId == '" + transaction_id + "' and e._key != '"+ key +"' RETURN e._key"
     
-        result = db.aql.execute(aql);
+        result = db.aql.execute(aql)
     
         for res_key in result:
             insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Output', '_from': key, '_to' : res_key}, data_provider_id)
@@ -149,7 +149,7 @@ def joinTransactions(transaction, data_provider_id):
     else:    
         aql = "FOR e IN ot_vertices FILTER e.vertex_type == 'TRANSACTION' and e.transaction_flow == 'Input' and e.identifiers.TransactionId == '" + transaction_id + "' and e._key != '"+ key +"' RETURN e._key"
     
-        result = db.aql.execute(aql);
+        result = db.aql.execute(aql)
     
         for res_key in result:
             insert_edge('TRANSACTION_CONNECTION', {'_key':hashed(key + "-" + res_key), 'TransactionFlow': 'Input', '_from': key, '_to' : res_key}, data_provider_id)
@@ -163,7 +163,7 @@ def isCollaborationConfirmed(providerId, partnerId):
 
 def hasVertex(vertex_key):
     nodesCollection = db.collection('ot_vertices')
-    return nodesCollection.has(vertex_key);
+    return nodesCollection.has(vertex_key)
 
 # Loading XML from input file supplied in command line argument
 xml_file_url = sys.argv[1]
@@ -273,7 +273,7 @@ if 'MasterData' in OriginTrailExport_element:
         for business_location_element in BusinessLocation_elements:
             
             if 'BusinessLocationOwnerId' not in business_location_element:
-                error('Missing BusinessLocationOwnerId for BusinessLocation!');
+                error('Missing BusinessLocationOwnerId for BusinessLocation!')
             
             business_location_owner_id = business_location_element['BusinessLocationOwnerId']
             
@@ -502,7 +502,7 @@ if 'TransactionData' in OriginTrailExport_element:
                     if 'TransactionBatchData' not in batch_element:
                         error('Missing TransactionBatchData element for Batch!')
                         
-                    INPUT_BATCHES.append(batch_key);
+                    INPUT_BATCHES.append(batch_key)
             
             # Reading output units for internal transaction
             
@@ -545,7 +545,7 @@ if 'TransactionData' in OriginTrailExport_element:
                     
                 BatchData_element = batch_element['TransactionBatchData']
                 
-                OUTPUT_BATCHES.append(batch_key);
+                OUTPUT_BATCHES.append(batch_key)
         
             if 'InternalTransactionData' not in internal_transaction_element:
                 error('Missing InternalTransactionData element for InternalTransaction!')
@@ -670,7 +670,7 @@ if 'TransactionData' in OriginTrailExport_element:
                 if 'TransactionBatchData' not in batch_element:
                     error('Missing TransactionBatchData element for Batch!')
             
-                TRANSFERED_BATCHES.append(batch_key);
+                TRANSFERED_BATCHES.append(batch_key)
 
                 if 'ExternalTransactionData' not in external_transaction_element:
                     error('Missing ExternalTransactionData element for ExternalTransaction!')
