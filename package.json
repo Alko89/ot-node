@@ -23,15 +23,6 @@
     "sinon": "^4.5.0",
     "supertest": "^3.0.0"
   },
-<<<<<<< HEAD
-  "scripts": {
-    "test": "nyc mocha --recursive test",
-    "debug": "concurrently -n IPC,RPC -c magenta,yellow \"node --nolazy --inspect=9229 ipc\" \"node --nolazy --inspect=9228 rpc\" --kill-others --prefix \"{name}\"",
-    "start": "concurrently -n IPC,RPC -c magenta,yellow \"node ipc\" \"node rpc\" --kill-others --prefix \"{name}\"",
-    "lint": "./node_modules/.bin/eslint --quiet modules test ipc.js rpc.js update.js gulpfile.js isStartHealthy.js"
-  },
-=======
->>>>>>> 86f1ca5024f3f436965e86f16151d3ad77f89015
   "repository": {
     "type": "git",
     "url": "git+https://github.com/OriginTrail/ot-node.git"
