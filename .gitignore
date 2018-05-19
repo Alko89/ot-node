@@ -1,17 +1,39 @@
 node_modules
 .DS_Store
 .idea
+<<<<<<< HEAD
 config.json
+=======
+.vscode/*
+>>>>>>> 86f1ca5024f3f436965e86f16151d3ad77f89015
 .env
 .nyc_output
 package-lock.json
 kad-storage/*
-!kad-storage/.gitkeep
 system/*
 !system/.gitkeep
 import-log.txt
 OT-GIT-NODE-DEVELOP.zip
 manual-testing-scripts
+<<<<<<< HEAD
 log.log
 start.log
 ot-node-virtualenv
+=======
+node.log
+keys
+data
+modules/blockchain_interface/ethereum/build/*
+modules/Blockchain/Ethereum/build/
+hidden_service
+!*.gitkeep
+Envoy.blade.php
+!/keys/.gitkeep
+!/data/.gitkeep
+!/data/wallet.dat/.invalid/.gitkeep
+!/data/wallet.dat/.transferred/.gitkeep
+!/data/wallet.dat/.gitkeep
+/modules/Database/system.db
+@kadenceproject
+test.*
+>>>>>>> 86f1ca5024f3f436965e86f16151d3ad77f89015

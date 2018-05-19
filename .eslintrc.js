@@ -19,8 +19,10 @@ module.exports = {
             "unix"
         ],
         "camelcase": 0,
-        "no-unused-expressions": 0,
+        "class-methods-use-this": 0,
         "no-unused-vars": 0,
+        "no-return-assign": 0,
+        "consistent-return": 0,
         "no-var": 0,
         "vars-on-top": 0,
         "block-scoped-var": 0,

@@ -1,16 +1,24 @@
 language: node_js
 node_js:
   - "9"
-services:
-  - mongodb
-before_install:
-- cp .env.example .env
-- echo arangodb3 arangodb/password password root | sudo debconf-set-selections  # set username 'root'
-- echo arangodb3 arangodb/password_again password root | sudo debconf-set-selections  # set password 'root'
-- chmod +x setup_arangodb.sh
-- ./setup_arangodb.sh
-- rm -rf ArangoDB-3.2.2.tar.gz
-- cd ArangoDB-3.2.2 && touch .eslintignore && find . -name '*.js' >> .eslintignore && cd ..
+env:
+  - NODE_ENV=test
+sudo: enabled
+before_script:
+  - cp .env.example .env
+  - touch modules/Database/system.db
+  - ./node_modules/.bin/sequelize db:migrate
+  - ./node_modules/.bin/sequelize db:seed:all
+  - echo arangodb3 arangodb/password password root | sudo debconf-set-selections  # set username 'root'
+  - echo arangodb3 arangodb/password_again password root | sudo debconf-set-selections  # set password 'root'
+  - chmod +x setup_arangodb.sh
+  - ./setup_arangodb.sh
+  - rm -rf ArangoDB-3.2.2.tar.gz
+  - chmod +x setup_neo4j.sh
+  - ./setup_neo4j.sh
+  - service neo4j start
+  - npm install -g ganache-cli
+  - npm install -g truffle
 script:
   - npm run lint
   - npm test
@@ -19,6 +27,16 @@ script:
   - jobs
   - kill %1
   - node isStartHealthy.js
+  - ganache-cli -i 5777 -p 7545 &>ganache.log &
+  - cd modules/Blockchain/Ethereum && rm -rf build && truffle migrate --reset --compile-all --network ganache
+  # - truffle test --network ganache
+  - cd ../../../
+  - jobs
+  - kill %1
 after_script:
-- kill -9 $(pgrep arangod)
-- rm -f start.log
+  - cat start.log
+  - rm -f start.log
+  - cat ganache.log
+  - rm -f ganache.log
+  - kill -9 $(pgrep arangod)
+  - service neo4j stop

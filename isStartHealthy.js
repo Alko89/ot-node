@@ -2,7 +2,7 @@ const fs = require('fs');
 
 fs.readFile('start.log', (err, data) => {
     if (err) throw err;
-    if (data.indexOf('OriginTrail RPC server listening at http://[::]:8888') >= 0) {
+    if (data.indexOf('OT Node listening at https://127.0.0.1:5278') >= 0) {
         console.log('npm start is healthy!');
         process.exit(0);
     } else {
